@@ -24,6 +24,22 @@ class InvoiceApiController extends Controller
         $this->mailer = $mailer;
     }
 
+    /**
+     * @SWG\Get(
+     *   path="/invoices",
+     *   summary="List of invoices",
+     *   tags={"invoice"},
+     *   @SWG\Response(
+     *     response=200,
+     *     description="A list with invoices",
+     *      @SWG\Schema(type="array", @SWG\Items(ref="#/definitions/Invoice"))
+     *   ),
+     *   @SWG\Response(
+     *     response="default",
+     *     description="an ""unexpected"" error"
+     *   )
+     * )
+     */
     public function index($clientPublicId = false)
     {
         $invoices = Invoice::scope()
@@ -54,6 +70,28 @@ class InvoiceApiController extends Controller
         return Response::make($response, 200, $headers);
     }
 
+
+    /**
+     * @SWG\Post(
+     *   path="/invoices",
+     *   tags={"invoice"},
+     *   summary="Create an invoice",
+     *   @SWG\Parameter(
+     *     in="body",
+     *     name="body",
+     *     @SWG\Schema(ref="#/definitions/Invoice")
+     *   ),
+     *   @SWG\Response(
+     *     response=200,
+     *     description="New invoice",
+     *      @SWG\Schema(type="object", @SWG\Items(ref="#/definitions/Invoice"))
+     *   ),
+     *   @SWG\Response(
+     *     response="default",
+     *     description="an ""unexpected"" error"
+     *   )
+     * )
+     */
     public function store()
     {
         $data = Input::all();
@@ -214,13 +252,13 @@ class InvoiceApiController extends Controller
         }
 
         // if only the product key is set we'll load the cost and notes
-        if ($item['product_key'] && (!$item['cost'] || !$item['notes'])) {
+        if ($item['product_key'] && (is_null($item['cost']) || is_null($item['notes']))) {
             $product = Product::findProductByKey($item['product_key']);
             if ($product) {
-                if (!$item['cost']) {
+                if (is_null($item['cost'])) {
                     $item['cost'] = $product->cost;
                 }
-                if (!$item['notes']) {
+                if (is_null($item['notes'])) {
                     $item['notes'] = $product->notes;
                 }
             }

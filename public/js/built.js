@@ -29880,10 +29880,10 @@ links:["Africa/Abidjan|Africa/Bamako","Africa/Abidjan|Africa/Banjul","Africa/Abi
 var isOpera = !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
 var isFirefox = typeof InstallTrigger !== 'undefined';   // Firefox 1.0+
 var isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0;
-var isChrome = !!window.chrome && !isOpera;              // Chrome 1+
+var isEdge = navigator.userAgent.indexOf('Edge/') >= 0;
+var isChrome = !!window.chrome && !isOpera && !isEdge; // Chrome 1+
 var isChromium = isChrome && navigator.userAgent.indexOf('Chromium') >= 0;
 var isIE = /*@cc_on!@*/false || !!document.documentMode; // At least IE6
-
 
 var invoiceOld;
 var refreshTimer;
@@ -31627,10 +31627,18 @@ function GetPdfMake(invoice, javascript, callback) {
             }
         }
 
+        // only show the footer on the last page
+        if (invoice.is_pro && key === 'footer') {
+            return function(page, pages) {
+                return page === pages ? val : '';
+            }
+        }
+
         // check for markdown
         if (key === 'text') {
             val = NINJA.parseMarkdownText(val, true);
         }
+
         /*
         if (key === 'stack') {
             val = NINJA.parseMarkdownStack(val);
@@ -31670,6 +31678,7 @@ function GetPdfMake(invoice, javascript, callback) {
     doc.save = function(fileName) {
         this.download(fileName);
     };
+    
     return doc;
 }
 

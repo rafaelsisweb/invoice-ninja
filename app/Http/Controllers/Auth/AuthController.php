@@ -75,6 +75,7 @@ class AuthController extends Controller {
 
     public function postLoginWrapper(Request $request)
     {
+
         $userId = Auth::check() ? Auth::user()->id : null;
         $user = User::where('email', '=', $request->input('email'))->first();
 
@@ -90,21 +91,15 @@ class AuthController extends Controller {
 
             $users = false;
             // we're linking a new account
-            if ($userId && Auth::user()->id != $userId) {
+            if ($request->link_accounts && $userId && Auth::user()->id != $userId) {
                 $users = $this->accountRepo->associateAccounts($userId, Auth::user()->id);
-                Session::flash('warning', trans('texts.associated_accounts'));
+                Session::flash('message', trans('texts.associated_accounts'));
             // check if other accounts are linked
             } else {
                 $users = $this->accountRepo->loadAccounts(Auth::user()->id);
             }
             Session::put(SESSION_USER_ACCOUNTS, $users);
 
-            if ($request->create_token) {
-                if ( ! env(API_SECRET) || $request->api_secret !== env(API_SECRET)) {
-                    return 'Invalid secret';
-                }
-                return $this->accountRepo->createToken($request->token_name);
-            }
         } elseif ($user) {
             $user->failed_logins = $user->failed_logins + 1;
             $user->save();
@@ -112,6 +107,7 @@ class AuthController extends Controller {
 
         return $response;
     }
+
 
     public function getLogoutWrapper()
     {

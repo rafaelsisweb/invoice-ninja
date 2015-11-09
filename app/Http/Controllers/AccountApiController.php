@@ -6,35 +6,68 @@ use Response;
 use Input;
 use App\Models\Client;
 use App\Models\Account;
+use App\Models\AccountToken;
 use App\Ninja\Repositories\AccountRepository;
-
+use Illuminate\Http\Request;
 use League\Fractal;
-use League\Fractal\Resource\Item;
 use League\Fractal\Manager;
 use App\Ninja\Serializers\ArraySerializer;
 use App\Ninja\Transformers\AccountTransformer;
+use App\Ninja\Transformers\UserAccountTransformer;
+use App\Http\Controllers\BaseAPIController;
+use Swagger\Annotations as SWG;
 
-class AccountApiController extends Controller
+class AccountApiController extends BaseAPIController
 {
     protected $accountRepo;
 
     public function __construct(AccountRepository $accountRepo)
     {
+        parent::__construct();
+
         $this->accountRepo = $accountRepo;
     }
 
-    public function index()
+    public function login(Request $request)
     {
-        $manager = new Manager();
-        $manager->setSerializer(new ArraySerializer());
+        if ( ! env(API_SECRET) || $request->api_secret !== env(API_SECRET)) {
+            sleep(ERROR_DELAY);
+            return 'Invalid secret';
+        }
 
-        $account = Auth::user()->account->load('users');
-        $resource = new Item($account, new AccountTransformer, 'account');
-
-        $response = $manager->createData($resource)->toArray();
-        $response = json_encode($response, JSON_PRETTY_PRINT);
-        $headers = Utils::getApiHeaders();
-
-        return Response::make($response, 200, $headers);
+        if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
+            return $this->processLogin($request);
+        } else {
+            sleep(ERROR_DELAY);
+            return 'Invalid credentials';
+        }
     }
+
+    private function processLogin(Request $request)
+    {
+        // Create a new token only if one does not already exist
+        $user = Auth::user();
+        $this->accountRepo->createTokens($user, $request->token_name);
+        
+        $users = $this->accountRepo->findUsers($user, 'account.account_tokens');
+        $data = $this->createCollection($users, new UserAccountTransformer($user->account, $request->token_name));
+
+        $response = [
+            'user_accounts' => $data,
+            'default_url' => SITE_URL
+        ];
+
+        return $this->response($response);
+    }
+
+    public function show()
+    {
+        $account = Auth::user()->account;
+        $account->load('clients.getInvoices.invoice_items', 'users');
+
+        $response = $this->createItem($account, new AccountTransformer);
+
+        return $this->response($response);
+    }
+
 }

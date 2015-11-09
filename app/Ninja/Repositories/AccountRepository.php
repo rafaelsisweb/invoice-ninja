@@ -236,6 +236,15 @@ class AccountRepository
         return $client;
     }
 
+    public function findByKey($key)
+    {
+        $account = Account::whereAccountKey($key)
+                    ->with('clients.invoices.invoice_items', 'clients.contacts')
+                    ->firstOrFail();
+
+        return $account;
+    }
+
     public function unlinkUserFromOauth($user)
     {
         $user->oauth_provider_id = null;
@@ -301,6 +310,17 @@ class AccountRepository
                     ->first();
     }
 
+    public function findUsers($user, $with = null)
+    {
+        $accounts = $this->findUserAccounts($user->id);
+
+        if ($accounts) {
+            return $this->getUserAccounts($accounts, $with);
+        } else {
+            return [$user];
+        }
+    }
+
     public function findUserAccounts($userId1, $userId2 = false)
     {
         if (!Schema::hasTable('user_accounts')) {
@@ -324,7 +344,8 @@ class AccountRepository
         return $query->first(['id', 'user_id1', 'user_id2', 'user_id3', 'user_id4', 'user_id5']);
     }
 
-    public function prepareUsersData($record) {
+    public function getUserAccounts($record, $with = null)
+    {
         if (!$record) {
             return false;
         }
@@ -338,8 +359,22 @@ class AccountRepository
         }
 
         $users = User::with('account')
-                    ->whereIn('id', $userIds)
-                    ->get();
+                    ->whereIn('id', $userIds);
+
+        if ($with) {
+            $users->with($with);
+        }
+        
+        return $users->get();
+    }
+
+    public function prepareUsersData($record)
+    {
+        if (!$record) {
+            return false;
+        }
+
+        $users = $this->getUserAccounts($record);
 
         $data = [];
         foreach ($users as $user) {
@@ -457,13 +492,20 @@ class AccountRepository
         return $code;
     }
 
-    public function createToken($name)
+    public function createTokens($user, $name)
     {
-        $token = AccountToken::createNew();
-        $token->name = trim($name) ?: 'TOKEN';
-        $token->token = str_random(RANDOM_KEY_LENGTH);
-        $token->save();
+        $name = trim($name) ?: 'TOKEN';
+        $users = $this->findUsers($user);
 
-        return $token->token;
+        foreach ($users as $user) {
+            if ($token = AccountToken::whereUserId($user->id)->whereName($name)->first()) {
+                continue;
+            }
+
+            $token = AccountToken::createNew($user);
+            $token->name = $name;
+            $token->token = str_random(RANDOM_KEY_LENGTH);
+            $token->save();
+        }
     }
 }

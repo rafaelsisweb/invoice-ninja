@@ -8,10 +8,14 @@ use Event;
 use App;
 use App\Events\UserSettingsChanged;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Laracasts\Presenter\PresentableTrait;
 
 class Account extends Eloquent
 {
+    use PresentableTrait;
     use SoftDeletes;
+
+    protected $presenter = 'App\Ninja\Presenters\AccountPresenter';
     protected $dates = ['deleted_at'];
     protected $hidden = ['ip'];
 
@@ -41,7 +45,11 @@ class Account extends Eloquent
         'invoice_settings' => 'object',
     ];
     */
-    
+    public function account_tokens()
+    {
+        return $this->hasMany('App\Models\AccountToken');
+    }
+
     public function users()
     {
         return $this->hasMany('App\Models\User');
@@ -126,6 +134,15 @@ class Account extends Eloquent
     public function isEnglish()
     {
         return !$this->language_id || $this->language_id == DEFAULT_LANGUAGE;
+    }
+
+    public function hasInvoicePrefix()
+    {
+        if ( ! $this->invoice_number_prefix && ! $this->quote_number_prefix) {
+            return false;
+        }
+
+        return $this->invoice_number_prefix != $this->quote_number_prefix;
     }
 
     public function getDisplayName()
@@ -219,6 +236,17 @@ class Account extends Eloquent
         $fileName = 'logo/' . $this->account_key;
 
         return file_exists($fileName.'.png') ? $fileName.'.png' : $fileName.'.jpg';
+    }
+
+    public function getToken($name)
+    {
+        foreach ($this->account_tokens as $token) {
+            if ($token->name === $name) {
+                return $token->token;
+            }
+        }
+
+        return null;
     }
 
     public function getLogoWidth()
@@ -586,13 +614,13 @@ class Account extends Eloquent
 
     public function getDefaultEmailTemplate($entityType, $message = false)
     {
-        if (strpos($entityType, 'reminder') >= 0) {
+        if (strpos($entityType, 'reminder') !== false) {
             $entityType = ENTITY_INVOICE;
         }
 
-        $template = "\$client,<p/>\r\n\r\n" .
-                    trans("texts.{$entityType}_message", ['amount' => '$amount']) . "<p/>\r\n\r\n" .
-                    "<a href=\"\$link\">\$link</a><p/>\r\n\r\n";
+        $template = "<div>\$client,</div><br/>" .
+                    "<div>" . trans("texts.{$entityType}_message", ['amount' => '$amount']) . "</div><br/>" .
+                    "<div><a href=\"\$link\">\$link</a></div><br/>";
 
         if ($message) {
             $template .= "$message<p/>\r\n\r\n";

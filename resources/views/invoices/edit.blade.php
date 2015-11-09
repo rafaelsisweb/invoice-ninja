@@ -15,6 +15,10 @@
 @stop
 
 @section('content')
+    @if ($errors->first('invoice_items'))
+        <div class="alert alert-danger">{{ trans($errors->first('invoice_items')) }}</div>
+    @endif
+
     @if ($invoice->id)
 		<ol class="breadcrumb">
             @if ($invoice->is_recurring)
@@ -26,12 +30,17 @@
 		</ol>  
 	@endif
 
-	{!! Former::open($url)->method($method)->addClass('warn-on-exit')->rules(array(
-		'client' => 'required',
-        'invoice_number' => 'required',
-		'product_key' => 'max:255'
-	)) !!}	
+	{!! Former::open($url)
+            ->method($method)
+            ->addClass('warn-on-exit')
+            ->autocomplete('off')
+            ->rules(array(
+        		'client' => 'required',
+                'invoice_number' => 'required',
+        		'product_key' => 'max:255'
+        	)) !!}	
 
+    @include('partials.autocomplete_fix')
 
 	<input type="submit" style="display:none" name="submitButton" id="submitButton">
 
@@ -44,7 +53,7 @@
 
     		@if ($invoice->id || $data)
 				<div class="form-group">
-					<label for="client" class="control-label col-lg-4 col-sm-4">Client</label>
+					<label for="client" class="control-label col-lg-4 col-sm-4">{{ trans('texts.client') }}</label>
 					<div class="col-lg-8 col-sm-8">
                         <h4><div data-bind="text: getClientDisplayName(ko.toJS(client()))"></div></h4>
 						<a id="editClientLink" class="pointer" data-bind="click: $root.showClientForm">{{ trans('texts.edit_client') }}</a> |
@@ -73,7 +82,8 @@
 				<div style="display:none" class="form-group" data-bind="visible: contacts().length > 0 &amp;&amp; (contacts()[0].email() || contacts()[0].first_name()), foreach: contacts">
 					<div class="col-lg-8 col-lg-offset-4">
 						<label class="checkbox" data-bind="attr: {for: $index() + '_check'}" onclick="refreshPDF(true)">
-							<input type="checkbox" value="1" data-bind="checked: send_invoice, attr: {id: $index() + '_check'}">
+                            <input type="hidden" value="0" data-bind="attr: {name: 'client[contacts][' + $index() + '][send_invoice]'}">
+							<input type="checkbox" value="1" data-bind="checked: send_invoice, attr: {id: $index() + '_check', name: 'client[contacts][' + $index() + '][send_invoice]'}">
 							<span data-bind="html: email.display"></span> 
                         </label>
                         <span data-bind="html: $data.view_as_recipient"></span>&nbsp;&nbsp;
@@ -204,7 +214,7 @@
                     <input type="text" data-bind="value: tax().name, attr: {name: 'invoice_items[' + $index() + '][tax_name]'}" style="display:none">
                     <input type="text" data-bind="value: tax().rate, attr: {name: 'invoice_items[' + $index() + '][tax_rate]'}" style="display:none">
 				</td>
-				<td style="text-align:right;padding-top:9px !important">
+				<td style="text-align:right;padding-top:9px !important" nowrap>
 					<div class="line-total" data-bind="text: totals.total"></div>
 				</td>
 				<td style="cursor:pointer" class="hide-border td-icon">
@@ -492,7 +502,8 @@
                     {!! Former::text('last_name')->data_bind("value: last_name, valueUpdate: 'afterkeydown',
                             attr: {name: 'client[contacts][' + \$index() + '][last_name]'}") !!}
                     {!! Former::text('email')->data_bind("value: email, valueUpdate: 'afterkeydown', 
-                            attr: {name: 'client[contacts][' + \$index() + '][email]', id:'email'+\$index()}") !!}
+                            attr: {name: 'client[contacts][' + \$index() + '][email]', id:'email'+\$index()}")
+                            ->addClass('client-email') !!}
                     {!! Former::text('phone')->data_bind("value: phone, valueUpdate: 'afterkeydown',
                             attr: {name: 'client[contacts][' + \$index() + '][phone]'}") !!}
 
@@ -608,7 +619,7 @@
             for (var j=0; j<client.contacts.length; j++) {
                 var contact = client.contacts[j];
                 var contactName = getContactDisplayName(contact);
-                if (contact.is_primary) {
+                if (contact.is_primary === '1') {
                     contact.send_invoice = true;
                 }
                 if (clientName != contactName) {
@@ -760,7 +771,7 @@
 		@endif
 		
 		$('#clientModal').on('shown.bs.modal', function () {
-			$('#name').focus();
+            $('#client\\[name\\]').focus();
 		}).on('hidden.bs.modal', function () {
 			if (model.clientBackup) {
 				model.loadClient(model.clientBackup);
@@ -833,7 +844,7 @@
 	function createInvoiceModel() {
 		var invoice = ko.toJS(window.model).invoice;
 		invoice.is_pro = {{ Auth::user()->isPro() ? 'true' : 'false' }};
-		//invoice.is_quote = {{ $entityType == ENTITY_QUOTE ? 'true' : 'false' }};
+		invoice.is_quote = {{ $entityType == ENTITY_QUOTE ? 'true' : 'false' }};
 		invoice.contact = _.findWhere(invoice.client.contacts, {send_invoice: true});
 
         if (invoice.is_recurring) {

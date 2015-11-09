@@ -46,57 +46,13 @@ class PaymentController extends BaseController
         return View::make('list', array(
             'entityType' => ENTITY_PAYMENT,
             'title' => trans('texts.payments'),
-            'columns' => Utils::trans(['checkbox', 'invoice', 'client', 'transaction_reference', 'method', 'payment_amount', 'payment_date', 'action']),
+            'columns' => Utils::trans(['checkbox', 'invoice', 'client', 'transaction_reference', 'method', 'payment_amount', 'payment_date', '']),
         ));
     }
 
     public function getDatatable($clientPublicId = null)
     {
-        $payments = $this->paymentRepo->find($clientPublicId, Input::get('sSearch'));
-        $table = Datatable::query($payments);
-
-        if (!$clientPublicId) {
-            $table->addColumn('checkbox', function ($model) { return '<input type="checkbox" name="ids[]" value="'.$model->public_id.'" '.Utils::getEntityRowClass($model).'>'; });
-        }
-
-        $table->addColumn('invoice_number', function ($model) { return $model->invoice_public_id ? link_to('invoices/'.$model->invoice_public_id.'/edit', $model->invoice_number, ['class' => Utils::getEntityRowClass($model)]) : ''; });
-
-        if (!$clientPublicId) {
-            $table->addColumn('client_name', function ($model) { return link_to('clients/'.$model->client_public_id, Utils::getClientDisplayName($model)); });
-        }
-
-        $table->addColumn('transaction_reference', function ($model) { return $model->transaction_reference ? $model->transaction_reference : '<i>Manual entry</i>'; })
-              ->addColumn('payment_type', function ($model) { return $model->payment_type ? $model->payment_type : ($model->account_gateway_id ? $model->gateway_name : ''); });
-
-        return $table->addColumn('amount', function ($model) { return Utils::formatMoney($model->amount, $model->currency_id); })
-            ->addColumn('payment_date', function ($model) { return Utils::dateToString($model->payment_date); })
-            ->addColumn('dropdown', function ($model) {
-                if ($model->invoice_is_deleted) {
-                    return '<div style="height:38px"/>';
-                }
-
-                $str = '<div class="btn-group tr-action" style="visibility:hidden;">
-                            <button type="button" class="btn btn-xs btn-default dropdown-toggle" data-toggle="dropdown">
-                            '.trans('texts.select').' <span class="caret"></span>
-                            </button>
-                            <ul class="dropdown-menu" role="menu">';
-
-                if (!$model->deleted_at || $model->deleted_at == '0000-00-00') {
-                    $str .= '<li><a href="payments/'.$model->public_id.'/edit">'.trans('texts.edit_payment').'</a></li>
-                             <li class="divider"></li>
-                             <li><a href="javascript:archiveEntity('.$model->public_id.')">'.trans('texts.archive_payment').'</a></li>';
-                } else {
-                    $str .= '<li><a href="javascript:restoreEntity('.$model->public_id.')">'.trans('texts.restore_payment').'</a></li>';
-                }
-
-                if ($model->is_deleted) {
-                    return $str;
-                }
-                
-                return $str.'<li><a href="javascript:deleteEntity('.$model->public_id.')">'.trans('texts.delete_payment').'</a></li></ul>
-                        </div>';
-            })
-            ->make();
+        return $this->paymentService->getDatatable($clientPublicId, Input::get('sSearch'));
     }
 
     public function create($clientPublicId = 0, $invoicePublicId = 0)
@@ -118,6 +74,7 @@ class PaymentController extends BaseController
             'url' => "payments",
             'title' => trans('texts.new_payment'),
             'paymentTypes' => Cache::get('paymentTypes'),
+            'paymentTypeId' => Input::get('paymentTypeId'),
             'clients' => Client::scope()->with('contacts')->orderBy('name')->get(), );
 
         return View::make('payments.edit', $data);
@@ -524,11 +481,16 @@ class PaymentController extends BaseController
             return Redirect::to($invitation->getLink());
         }
 
+        // PayFast transaction referencce
+        if ($accountGateway->isGateway(GATEWAY_PAYFAST) && Request::has('pt')) {
+            $token = Request::query('pt');
+        }
+
         try {
             if (method_exists($gateway, 'completePurchase') && !$accountGateway->isGateway(GATEWAY_TWO_CHECKOUT)) {
                 $details = $this->paymentService->getPaymentDetails($invitation, $accountGateway);
                 $response = $gateway->completePurchase($details)->send();
-                $ref = $response->getTransactionReference();
+                $ref = $response->getTransactionReference() ?: $token;
 
                 if ($response->isSuccessful()) {
                     $payment = $this->paymentService->createPayment($invitation, $ref, $payerId);
@@ -592,19 +554,11 @@ class PaymentController extends BaseController
 
     private function error($type, $error, $accountGateway, $exception = false)
     {
-        if (!$error) {
-            if ($exception) {
-                $error = $exception->getMessage();
-            } else {
-                $error = trans('texts.payment_error');
-            }
-        }
-
         $message = '';
         if ($accountGateway && $accountGateway->gateway) {
             $message = $accountGateway->gateway->name . ': ';
         }
-        $message .= $error;
+        $message .= $error ?: trans('texts.payment_error');
 
         Session::flash('error', $message);
         Utils::logError("Payment Error [{$type}]: " . ($exception ? Utils::getErrorString($exception) : $message));

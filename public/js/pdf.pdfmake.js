@@ -54,10 +54,18 @@ function GetPdfMake(invoice, javascript, callback) {
             }
         }
 
+        // only show the footer on the last page
+        if (invoice.is_pro && key === 'footer') {
+            return function(page, pages) {
+                return page === pages ? val : '';
+            }
+        }
+
         // check for markdown
         if (key === 'text') {
             val = NINJA.parseMarkdownText(val, true);
         }
+
         /*
         if (key === 'stack') {
             val = NINJA.parseMarkdownStack(val);
@@ -97,6 +105,7 @@ function GetPdfMake(invoice, javascript, callback) {
     doc.save = function(fileName) {
         this.download(fileName);
     };
+    
     return doc;
 }
 
