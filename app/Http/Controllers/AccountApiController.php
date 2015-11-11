@@ -53,8 +53,7 @@ class AccountApiController extends BaseAPIController
         $data = $this->createCollection($users, new UserAccountTransformer($user->account, $request->token_name));
 
         $response = [
-            'user_accounts' => $data,
-            'default_url' => SITE_URL
+            'user_accounts' => $data
         ];
 
         return $this->response($response);
@@ -64,8 +63,11 @@ class AccountApiController extends BaseAPIController
     {
         $account = Auth::user()->account;
         $account->load('clients.getInvoices.invoice_items', 'users');
-
-        $response = $this->createItem($account, new AccountTransformer);
+        
+        $account = $this->createItem($account, new AccountTransformer);
+        $response = [
+            'account' => $account
+        ];
 
         return $this->response($response);
     }
