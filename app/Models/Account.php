@@ -238,6 +238,11 @@ class Account extends Eloquent
         return file_exists($fileName.'.png') ? $fileName.'.png' : $fileName.'.jpg';
     }
 
+    public function getLogoURL()
+    {
+        return SITE_URL . '/' . $this->getLogoPath();
+    }
+
     public function getToken($name)
     {
         foreach ($this->account_tokens as $token) {
@@ -331,7 +336,7 @@ class Account extends Eloquent
 
         if (strstr($pattern, '{$userId}')) {
             $search[] = '{$userId}';
-            $replace[] = str_pad($invoice->user->public_id, 2, '0', STR_PAD_LEFT);
+            $replace[] = str_pad(($invoice->user->public_id + 1), 2, '0', STR_PAD_LEFT);
         }
 
         $matches = false;
