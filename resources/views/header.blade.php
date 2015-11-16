@@ -365,9 +365,9 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a href="/" class='navbar-brand' target="_self">
+      <!--a href="/" class='navbar-brand' target="_self">
         <img src="{{ asset('images/invoiceninja-logo.png') }}" style="height:18px;width:auto"/>
-      </a>	    
+      </a -->	    
     </div>
 
     <div class="collapse navbar-collapse" id="navbar-collapse-1">
@@ -698,7 +698,8 @@
 {{-- Per our license, please do not remove or modify this section. --}}
 @if (!Utils::isNinjaProd())
 </div>
-<p>&nbsp;</p>
+<!--p>&nbsp;</p>
+
 <div class="container">
   {{ trans('texts.powered_by') }} <a href="https://www.invoiceninja.com/?utm_source=powered_by" target="_blank">InvoiceNinja.com</a> -
   {!! link_to(RELEASES_URL, 'v' . NINJA_VERSION, ['target' => '_blank']) !!} | 
@@ -741,7 +742,7 @@
       </div>
     </div>
   @endif
-</div>
+</div-->
 @endif
 
 <p>&nbsp;</p>
