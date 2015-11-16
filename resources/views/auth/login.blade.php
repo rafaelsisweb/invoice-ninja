@@ -71,8 +71,7 @@
 
     <div class="modal-header">
         <a href="{{ NINJA_WEB_URL }}" target="_blank">
-            <img src="{{ asset('images/icon-login.png') }}" />        
-            <h4>Invoice Ninja | {{ trans('texts.account_login') }}</h4>
+            <h4>{{ trans('texts.account_login') }}</h4>
         </a>
     </div>    
         <div class="inner">
