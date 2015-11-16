@@ -593,7 +593,7 @@ return array(
   'auto_wrap' => 'Quebrar Linhas',
   'duplicate_post' => 'Atenção: a pagina anterior foi enviada duas vezes. A segunda vez foi ignorada.',
   'view_documentation' => 'Ver Documentação',
-  'app_title' => 'Free Open-Source Online Invoicing',
+  'app_title' => 'Sistema de Pedidos e Orçamentos',
   'app_description' => 'Invoice Ninja is a free, open-source solution for invoicing and billing customers. With Invoice Ninja, you can easily build and send beautiful invoices from any device that has access to the web. Your clients can print your invoices, download them as pdf files, and even pay you online from within the system.',
 
   'rows' => 'linhas',
