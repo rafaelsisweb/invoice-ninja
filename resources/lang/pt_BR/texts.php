@@ -250,7 +250,7 @@ return array(
   'deleted_credits' => ':count créditos apagados com sucesso',
 
   // Emails
-  'confirmation_subject' => 'Confirmação de Conta do Invoice Ninja',
+  'confirmation_subject' => 'Confirmação de Conta do Sistema de Pedidos',
   'confirmation_header' => 'Confirmação de Conta',
   'confirmation_message' => 'Favor acessar o link abaixo para confirmar a sua conta.',
   'invoice_message' => 'Para visualizar a sua fatura de :amount, clique no link abaixo.',
