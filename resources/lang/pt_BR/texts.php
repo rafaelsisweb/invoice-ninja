@@ -319,8 +319,8 @@ return array(
   'field_label' => 'Nome do Campo',
   'field_value' => 'Valor do Campo',
   'edit' => 'Editar',
-  'view_invoice' => 'Vizualizar pedido',
-  'view_as_recipient' => 'Vizualizar como destinatário',
+  'view_invoice' => 'Visualizar pedido',
+  'view_as_recipient' => 'Visualizar como destinatário',
 
   // product management
   'product_library' => 'Lista de Produtos',
