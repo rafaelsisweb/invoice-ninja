@@ -319,11 +319,7 @@ return array(
   'field_label' => 'Nome do Campo',
   'field_value' => 'Valor do Campo',
   'edit' => 'Editar',
-<<<<<<< HEAD
   'view_invoice' => 'Visualizar pedido',
-=======
-  'view_invoice' => 'Visualizar fatura',
->>>>>>> master
   'view_as_recipient' => 'Visualizar como destinatário',
 
   // product management
