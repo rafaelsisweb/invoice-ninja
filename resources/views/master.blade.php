@@ -57,11 +57,11 @@
             }
         } );
         
-        /*   
+           
         $.extend( true, $.fn.datepicker.defaults, {
             language:'{{App::getLocale()}}'
         });
-        */
+        
         
         @if (env('FACEBOOK_PIXEL'))
             <!-- Facebook Pixel Code -->
