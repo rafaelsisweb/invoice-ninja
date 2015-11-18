@@ -1,6 +1,7 @@
 <?php namespace App\Http\Controllers;
 
 use Auth;
+use Exception;
 use File;
 use Image;
 use Input;
@@ -55,7 +56,7 @@ class AccountController extends BaseController
     protected $contactMailer;
     protected $referralRepository;
 
-    public function __construct(AccountRepository $accountRepo, UserMailer $userMailer, ContactMailer $contactMailer, ReferralRepository $referralRepository)
+    public function __construct(AccountRepository $accountRepo, UserMailer $userMailer, ContactMailer $contactMailer, ReferralRepository $referralRepository, ClientRepository $clientRepository)
     {
         parent::__construct();
 
@@ -63,6 +64,7 @@ class AccountController extends BaseController
         $this->userMailer = $userMailer;
         $this->contactMailer = $contactMailer;
         $this->referralRepository = $referralRepository;
+        $this->clientRepository = $clientRepository;
     }
 
     public function demo()
@@ -721,8 +723,7 @@ class AccountController extends BaseController
                 continue;
             }
 
-            $clientRepository = new ClientRepository();
-            $clientRepository->save($data);
+            $this->clientRepository->save($data);
             $count++;
         }
 

@@ -195,9 +195,6 @@ return array(
     'site_updates' => 'Site Updates',
     'custom_messages' => 'Custom Messages',
     'default_email_footer' => 'Set default <b>email signature</b>',
-    'import_clients' => 'Import Client Data',
-    'csv_file' => 'Select CSV file',
-    'export_clients' => 'Export Client Data',
     'select_file' => 'Please select a file',
     'first_row_headers' => 'Use first row as headers',
     'column' => 'Column',
@@ -207,6 +204,11 @@ return array(
     'clients_will_create' => 'clients will be created',
     'email_settings' => 'Email Settings',
     'pdf_email_attachment' => 'Attach PDFs',
+
+    //import CSV data pages
+    'import_clients' => 'Import Client Data',
+    'csv_file' => 'CSV file',
+    'export_clients' => 'Export Client Data',
 
     // application messages
     'created_client' => 'Successfully created client',
@@ -249,6 +251,7 @@ return array(
     'archived_credits' => 'Successfully archived :count credits',
     'deleted_credit' => 'Successfully deleted credit',
     'deleted_credits' => 'Successfully deleted :count credits',
+    'imported_file' => 'Successfully imported file',
 
     // Emails
     'confirmation_subject' => 'Invoice Ninja Account Confirmation',
@@ -786,7 +789,7 @@ return array(
     'invoice_not_found' => 'The requested invoice is not available',
 
     'referral_program' => 'Referral Program',
-    'referral_code' => 'Referral Code',
+    'referral_code' => 'Referral URL',
     'last_sent_on' => 'Sent Last: :date',
 
     'page_expire' => 'This page will expire soon, :click_here to keep working',
@@ -919,6 +922,16 @@ return array(
     'include' => 'Include',
 
     'logo_too_large' => 'Your logo is :size, for better performance we suggest uploading an image file less than 200KB',
+    'import_freshbooks' => 'Import From FreshBooks',
+    'import_data' => 'Import Data',
+    'source' => 'Source',
+    'csv' => 'CSV',
+    'client_file' => 'Client File',
+    'invoice_file' => 'Invoice File',
+    'task_file' => 'Task File',
+    'no_mapper' => 'No valid mapping for file',
+    'invalid_csv_header' => 'Invalid CSV Header',
+
     'email_errors' => [
         'inactive_client' => 'Emails can not be sent to inactive clients',
         'inactive_contact' => 'Emails can not be sent to inactive contacts',
