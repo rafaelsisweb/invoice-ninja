@@ -261,7 +261,7 @@ return array(
   'user_email_footer' => 'Para ajustar suas configurações de notificações de e-mail acesse '.SITE_URL.'/settings/notifications',
   'invoice_link_message' => 'Para visualizar o pedido do seu cliente clique no link abaixo:',
   'notification_invoice_paid_subject' => 'Pedido :invoice foi pago por :client',
-  'notification_invoice_sent_subject' => 'Pedido :invoice foi enviado por :client',
+  'notification_invoice_sent_subject' => 'Pedido :invoice foi enviado para :client',
   'notification_invoice_viewed_subject' => 'Pedido :invoice foi visualizada por :client',
   'notification_invoice_paid' => 'Um pagamento de :amount foi realizado pelo cliente :client através do pedido :invoice.',
   'notification_invoice_sent' => 'O cliente :client foi notificado por e-mail referente ao pedido :invoice de :amount.',
