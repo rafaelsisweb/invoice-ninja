@@ -151,9 +151,11 @@ class InvoiceController extends BaseController
         }
 
         $showApprove = $invoice->quote_invoice_id ? false : true;
+      /*
         if ($invoice->due_date) {
             $showApprove = time() < strtotime($invoice->due_date);
         }
+        */
 
         $data = array(
             'showApprove' => $showApprove,
