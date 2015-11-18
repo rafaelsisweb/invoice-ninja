@@ -30,7 +30,7 @@ return array(
   'client' => 'Cliente',
   'invoice_date' => 'Data do Pedido',
   'due_date' => 'Data de Vencimento',
-  'invoice_number' => 'Número do Pedido',
+  'invoice_number' => '#',
   'invoice_number_short' => 'Pedido #',
   'po_number' => 'Núm. Ordem de Serviço',
   'po_number_short' => 'OS #',
@@ -351,7 +351,7 @@ return array(
   // Quotes
   'quote' => 'Orçamento',
   'quotes' => 'Orçamentos',
-  'quote_number' => 'Número do Orçamento',
+  'quote_number' => '#',
   'quote_number_short' => 'Orçamento #',
   'quote_date' => 'Data do Orçamento',
   'quote_total' => 'Total do Orçamento',
