@@ -134,6 +134,7 @@ Route::group(['middleware' => 'auth'], function() {
     
     Route::post('/export', 'ExportController@doExport');
     Route::post('/import', 'ImportController@doImport');
+    Route::post('/import_csv', 'ImportController@doImportCSV');
 
     Route::resource('gateways', 'AccountGatewayController');
     Route::get('api/gateways', array('as'=>'api.gateways', 'uses'=>'AccountGatewayController@getDatatable'));
@@ -195,6 +196,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'api/v1'], function()
 {
     Route::resource('ping', 'ClientApiController@ping');
     Route::post('login', 'AccountApiController@login');
+    Route::get('static', 'AccountApiController@getStaticData');
     Route::get('accounts', 'AccountApiController@show');
     Route::resource('clients', 'ClientApiController');
     Route::get('quotes/{client_id?}', 'QuoteApiController@index');
@@ -245,7 +247,6 @@ if (!defined('CONTACT_EMAIL')) {
 
     define('ENV_DEVELOPMENT', 'local');
     define('ENV_STAGING', 'staging');
-    define('ENV_PRODUCTION', 'fortrabbit');
 
     define('RECENTLY_VIEWED', 'RECENTLY_VIEWED');
     define('ENTITY_CLIENT', 'client');
@@ -336,6 +337,7 @@ if (!defined('CONTACT_EMAIL')) {
     define('MAX_SUBDOMAIN_LENGTH', 30);
     define('MAX_IFRAME_URL_LENGTH', 250);
     define('MAX_LOGO_FILE_SIZE', 200); // KB
+    define('MAX_FAILED_LOGINS', 5);
     define('DEFAULT_FONT_SIZE', 9);
     define('DEFAULT_SEND_RECURRING_HOUR', 8);
 
@@ -393,7 +395,6 @@ if (!defined('CONTACT_EMAIL')) {
     define('DEFAULT_DATE_PICKER_FORMAT', 'M d, yyyy');
     define('DEFAULT_DATETIME_FORMAT', 'F j, Y g:i a');
     define('DEFAULT_DATETIME_MOMENT_FORMAT', 'MMM D, YYYY h:mm:ss a');
-    define('DEFAULT_QUERY_CACHE', 120); // minutes
     define('DEFAULT_LOCALE', 'en');
     define('DEFAULT_MAP_ZOOM', 10);
 
@@ -487,6 +488,11 @@ if (!defined('CONTACT_EMAIL')) {
     define('SOCIAL_GITHUB', 'GitHub');
     define('SOCIAL_LINKEDIN', 'LinkedIn');
 
+    define('USER_STATE_ACTIVE', 'active');
+    define('USER_STATE_PENDING', 'pending');
+    define('USER_STATE_DISABLED', 'disabled');
+    define('USER_STATE_ADMIN', 'admin');
+    
 
     $creditCards = [
                 1 => ['card' => 'images/credit_cards/Test-Visa-Icon.png', 'text' => 'Visa'],
@@ -495,8 +501,26 @@ if (!defined('CONTACT_EMAIL')) {
                 8 => ['card' => 'images/credit_cards/Test-Diners-Icon.png', 'text' => 'Diners'],
                 16 => ['card' => 'images/credit_cards/Test-Discover-Icon.png', 'text' => 'Discover']
             ];
-
     define('CREDIT_CARDS', serialize($creditCards));
+
+    $cachedTables = [
+        'currencies' => 'App\Models\Currency',
+        'sizes' => 'App\Models\Size',
+        'industries' => 'App\Models\Industry',
+        'timezones' => 'App\Models\Timezone',
+        'dateFormats' => 'App\Models\DateFormat',
+        'datetimeFormats' => 'App\Models\DatetimeFormat',
+        'languages' => 'App\Models\Language',
+        'paymentTerms' => 'App\Models\PaymentTerm',
+        'paymentTypes' => 'App\Models\PaymentType',
+        'countries' => 'App\Models\Country',
+        'invoiceDesigns' => 'App\Models\InvoiceDesign',
+        'invoiceStatus' => 'App\Models\InvoiceStatus',
+        'frequencies' => 'App\Models\Frequency',
+        'gateways' => 'App\Models\Gateway',
+        'themes' => 'App\Models\Theme',
+    ];
+    define('CACHED_TABLES', serialize($cachedTables));
 
     function uctrans($text)
     {

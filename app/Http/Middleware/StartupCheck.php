@@ -33,7 +33,7 @@ class StartupCheck
         }
 
         // Ensure all request are over HTTPS in production
-        if (App::environment() == ENV_PRODUCTION && !Request::secure()) {
+        if (Utils::isNinjaProd() && !Request::secure()) {
             return Redirect::secure(Request::getRequestUri());
         }
 
@@ -104,6 +104,8 @@ class StartupCheck
         } elseif (Auth::check()) {
             $locale = Auth::user()->account->language ? Auth::user()->account->language->locale : DEFAULT_LOCALE;
             App::setLocale($locale);
+        } elseif (session(SESSION_LOCALE)) {
+            App::setLocale(session(SESSION_LOCALE));
         }
 
         // Make sure the account/user localization settings are in the session
@@ -146,19 +148,7 @@ class StartupCheck
         }
 
         // Check data has been cached
-        $cachedTables = [
-            'currencies' => 'App\Models\Currency',
-            'sizes' => 'App\Models\Size',
-            'industries' => 'App\Models\Industry',
-            'timezones' => 'App\Models\Timezone',
-            'dateFormats' => 'App\Models\DateFormat',
-            'datetimeFormats' => 'App\Models\DatetimeFormat',
-            'languages' => 'App\Models\Language',
-            'paymentTerms' => 'App\Models\PaymentTerm',
-            'paymentTypes' => 'App\Models\PaymentType',
-            'countries' => 'App\Models\Country',
-            'invoiceDesigns' => 'App\Models\InvoiceDesign',
-        ];
+        $cachedTables = unserialize(CACHED_TABLES);
         if (Input::has('clear_cache')) {
             Session::flash('message', 'Cache cleared');
         }
