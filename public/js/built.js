@@ -1,4 +1,3 @@
-
 /*!
  * jQuery JavaScript Library v1.11.3
  * http://jquery.com/
@@ -32011,7 +32010,7 @@ NINJA.accountAddress = function(invoice) {
         {text: account.address1},
         {text: account.address2},
         {text: cityStatePostal},
-        //{text: account.country ? account.country.name : ''},
+        {text: account.country ? account.country.name : ''},
     ];
 
     if (invoice.is_pro) {
