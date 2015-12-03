@@ -7,13 +7,24 @@
 
 [![Join the chat at https://gitter.im/hillelcoren/invoice-ninja](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/hillelcoren/invoice-ninja?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-If you'd like to use our code to sell your own invoicing app email us for details about our affiliate program.
+### Referral Program
+* $100 per signup paid over 3 years - [Learn more](https://www.invoiceninja.com/referral-program/)
+
+### Reseller Program
+There are two options:
+* 10% of revenue
+* $1,000 for a site limited to 1,000 accounts
 
 ### Installation Options
 * [Self-Host Zip](https://www.invoiceninja.com/knowledgebase/self-host/) - Free
 * [Docker File](https://github.com/invoiceninja/dockerfiles) - Free
 * [Bitnami](https://bitnami.com/stack/invoice-ninja) - Free
 * [Softaculous](https://www.softaculous.com/apps/ecommerce/Invoice_Ninja) - $30
+
+### Requirements
+* PHP >= 5.4.0
+* MCrypt Extension
+* MySQL
 
 ### Features
 * Built using Laravel 5
@@ -30,6 +41,10 @@ If you'd like to use our code to sell your own invoicing app email us for detail
 * [Zapier](https://zapier.com/) integration
 * [D3.js](http://d3js.org/) visualizations
 
+### Recommended Providers
+* [Stripe](https://stripe.com/)
+* [Postmark](https://postmarkapp.com/)
+
 ### Documentation
 * [Ubuntu and Apache](http://blog.technerdservices.com/index.php/2015/04/techpop-how-to-install-invoice-ninja-on-ubuntu-14-04/)
 * [Debian and Nginx](https://www.rosehosting.com/blog/install-invoice-ninja-on-a-debian-7-vps/)
@@ -43,10 +58,6 @@ If you'd like to use our code to sell your own invoicing app email us for detail
 * [Troels Liebe Bentsen](https://github.com/tlbdk)
 * [Jeramy Simpson](https://github.com/JeramyMywork) - [MyWork](https://www.mywork.com.au)
 * [Sigitas Limontas](https://lt.linkedin.com/in/sigitaslimontas)
-
-### Recommended Providers
-* [Stripe](https://stripe.com/)
-* [Postmark](https://postmarkapp.com/)
 
 ### Frameworks/Libraries
 * [laravel/laravel](https://github.com/laravel/laravel) - A PHP Framework For Web Artisans

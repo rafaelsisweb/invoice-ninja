@@ -212,13 +212,8 @@ class AccountController extends BaseController
     {
         // check that logo is less than the max file size
         $account = Auth::user()->account;
-        if ($account->hasLogo()) {
-            $filename = $account->getLogoPath();
-            $bytes = File::size($filename);
-            if ($bytes > MAX_LOGO_FILE_SIZE * 1000) {
-                $bytes /= 1000;
-                Session::flash('warning', trans('texts.logo_too_large', ['size' => round($bytes) . 'KB']));
-            }
+        if ($account->isLogoTooLarge()) {
+            Session::flash('warning', trans('texts.logo_too_large', ['size' => $account->getLogoSize() . 'KB']));
         }
 
         $data = [
@@ -272,6 +267,12 @@ class AccountController extends BaseController
         $account->load('account_gateways');
         $count = count($account->account_gateways);
         
+        if ($accountGateway = $account->getGatewayConfig(GATEWAY_STRIPE)) {
+            if ( ! $accountGateway->getPublishableStripeKey()) {
+                Session::flash('warning', trans('texts.missing_publishable_key'));
+            }
+        }
+
         if ($count == 0) {
             return Redirect::to('gateways/create');
         } else {
@@ -431,6 +432,11 @@ class AccountController extends BaseController
     {
         if (Auth::user()->account->isPro()) {
             $account = Auth::user()->account;
+            $account->email_design_id = Input::get('email_design_id');
+
+            if (Utils::isNinja()) {
+                $account->enable_email_markup = Input::get('enable_email_markup') ? true : false;
+            }
 
             foreach ([ENTITY_INVOICE, ENTITY_QUOTE, ENTITY_PAYMENT, REMINDER1, REMINDER2, REMINDER3] as $type) {
                 $subjectField = "email_subject_{$type}";

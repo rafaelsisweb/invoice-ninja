@@ -4,8 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "b6c2660a613f4e94f13f226ec19c66eb",
-    "content-hash": "744b32c9ba96b830e7e8ea8b38112b03",
+    "hash": "6966ff410ab9fb5745347a70ab9d85ca",
     "packages": [
         {
             "name": "agmscode/omnipay-agms",
@@ -5310,16 +5309,16 @@
         },
         {
             "name": "omnipay/stripe",
-            "version": "v2.2.1",
+            "version": "v2.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/thephpleague/omnipay-stripe.git",
-                "reference": "906377e50045dc2ba9c612aa1f6924157e1f750e"
+                "reference": "54b816a5e95e34c988d71fb805b0232cfd7c1ce5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/thephpleague/omnipay-stripe/zipball/906377e50045dc2ba9c612aa1f6924157e1f750e",
-                "reference": "906377e50045dc2ba9c612aa1f6924157e1f750e",
+                "url": "https://api.github.com/repos/thephpleague/omnipay-stripe/zipball/54b816a5e95e34c988d71fb805b0232cfd7c1ce5",
+                "reference": "54b816a5e95e34c988d71fb805b0232cfd7c1ce5",
                 "shasum": ""
             },
             "require": {
@@ -5363,7 +5362,7 @@
                 "payment",
                 "stripe"
             ],
-            "time": "2015-04-14 18:55:56"
+            "time": "2015-11-10 16:17:35"
         },
         {
             "name": "omnipay/targetpay",
@@ -6979,16 +6978,16 @@
         },
         {
             "name": "twbs/bootstrap",
-            "version": "v3.3.5",
+            "version": "v3.3.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/twbs/bootstrap.git",
-                "reference": "16b48259a62f576e52c903c476bd42b90ab22482"
+                "reference": "81df608a40bf0629a1dc08e584849bb1e43e0b7a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/twbs/bootstrap/zipball/16b48259a62f576e52c903c476bd42b90ab22482",
-                "reference": "16b48259a62f576e52c903c476bd42b90ab22482",
+                "url": "https://api.github.com/repos/twbs/bootstrap/zipball/81df608a40bf0629a1dc08e584849bb1e43e0b7a",
+                "reference": "81df608a40bf0629a1dc08e584849bb1e43e0b7a",
                 "shasum": ""
             },
             "replace": {
@@ -7026,7 +7025,7 @@
                 "responsive",
                 "web"
             ],
-            "time": "2015-06-16 16:13:22"
+            "time": "2015-11-24 19:37:05"
         },
         {
             "name": "vink/omnipay-komoju",
@@ -7311,22 +7310,26 @@
     "packages-dev": [
         {
             "name": "codeception/c3",
-            "version": "2.0.3",
+            "version": "2.0.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Codeception/c3.git",
-                "reference": "30321efb2421c5d201d02e2cb8da1a1ca96e4a38"
+                "reference": "bc22b4f6cd1a7e74a98dbff541c055dbf0f6f7c8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Codeception/c3/zipball/30321efb2421c5d201d02e2cb8da1a1ca96e4a38",
-                "reference": "30321efb2421c5d201d02e2cb8da1a1ca96e4a38",
+                "url": "https://api.github.com/repos/Codeception/c3/zipball/bc22b4f6cd1a7e74a98dbff541c055dbf0f6f7c8",
+                "reference": "bc22b4f6cd1a7e74a98dbff541c055dbf0f6f7c8",
                 "shasum": ""
             },
             "require": {
+                "composer-plugin-api": "1.0.0",
                 "php": ">=5.4.0"
             },
-            "type": "library",
+            "type": "composer-plugin",
+            "extra": {
+                "class": "Codeception\\c3\\Installer"
+            },
             "autoload": {
                 "psr-4": {
                     "Codeception\\c3\\": "."
@@ -7338,8 +7341,12 @@
             ],
             "authors": [
                 {
+                    "name": "Tiger Seo",
+                    "email": "tiger.seo@gmail.com"
+                },
+                {
                     "name": "Michael Bodnarchuk",
-                    "email": "davert.php@resend.cc",
+                    "email": "davert.php@codegyre.com",
                     "homepage": "http://codegyre.com"
                 }
             ],
@@ -7349,27 +7356,27 @@
                 "code coverage",
                 "codecoverage"
             ],
-            "time": "2014-11-18 22:06:45"
+            "time": "2015-11-25 04:03:09"
         },
         {
             "name": "codeception/codeception",
-            "version": "2.1.4",
+            "version": "2.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Codeception/Codeception.git",
-                "reference": "6a812e8a0d1b1db939a29b4dc14cb398b21b6112"
+                "reference": "521adbb2ee34e9debdd8508a2c41ab2b5c2f042b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Codeception/Codeception/zipball/6a812e8a0d1b1db939a29b4dc14cb398b21b6112",
-                "reference": "6a812e8a0d1b1db939a29b4dc14cb398b21b6112",
+                "url": "https://api.github.com/repos/Codeception/Codeception/zipball/521adbb2ee34e9debdd8508a2c41ab2b5c2f042b",
+                "reference": "521adbb2ee34e9debdd8508a2c41ab2b5c2f042b",
                 "shasum": ""
             },
             "require": {
                 "ext-json": "*",
                 "ext-mbstring": "*",
                 "facebook/webdriver": ">=1.0.1",
-                "guzzlehttp/guzzle": ">=4.1.4 <7.0",
+                "guzzlehttp/guzzle": ">=4.0|<7.0",
                 "guzzlehttp/psr7": "~1.0",
                 "php": ">=5.4.0",
                 "phpunit/phpunit": "~4.8.0",
@@ -7429,7 +7436,7 @@
                 "functional testing",
                 "unit testing"
             ],
-            "time": "2015-11-12 03:57:06"
+            "time": "2015-08-09 13:48:55"
         },
         {
             "name": "doctrine/instantiator",

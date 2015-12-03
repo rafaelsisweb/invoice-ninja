@@ -5,7 +5,9 @@ use Utils;
 use Session;
 use DateTime;
 use Event;
+use Cache;
 use App;
+use File;
 use App\Events\UserSettingsChanged;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Laracasts\Presenter\PresentableTrait;
@@ -203,10 +205,26 @@ class Account extends Eloquent
         return $this->date_format ? $this->date_format->format : DEFAULT_DATE_FORMAT;
     }
 
+    public function formatMoney($amount, $client = null)
+    {
+        $currency = ($client && $client->currency) ? $client->currency : $this->currency;
+
+        if ( ! $currency) {
+            $currencies = Cache::get('currencies')->filter(function($item) {
+                return $item->id == DEFAULT_CURRENCY;
+            });
+            $currency = $currencies->first();
+        }
+
+        return $currency->symbol . number_format($amount, $currency->precision, $currency->decimal_separator, $currency->thousand_separator);
+    }
+
     public function formatDate($date)
     {
-        if (!$date) {
+        if ( ! $date) {
             return null;
+        } elseif ( ! $date instanceof \DateTime) {
+            $date = new \DateTime($date);
         }
 
         return $date->format($this->getCustomDateFormat());
@@ -304,11 +322,13 @@ class Account extends Eloquent
     {
         $invoice = Invoice::createNew();
 
+        $invoice->is_recurring = false;
+        $invoice->is_quote = false;
         $invoice->invoice_date = Utils::today();
         $invoice->start_date = Utils::today();
         $invoice->invoice_design_id = $this->invoice_design_id;
         $invoice->client_id = $clientId;
-           
+        
         if ($entityType === ENTITY_RECURRING_INVOICE) {
             $invoice->invoice_number = microtime(true);
             $invoice->is_recurring = true;
@@ -441,7 +461,14 @@ class Account extends Eloquent
         if ($invoice->is_quote && !$this->share_counter) {
             $this->quote_number_counter += 1;
         } else {
-            $this->invoice_number_counter += 1;
+            $default = $this->invoice_number_counter;
+            $actual = Utils::parseInt($invoice->invoice_number);
+
+            if ( ! $this->isPro() && $default != $actual) {
+                $this->invoice_number_counter = $actual + 1;
+            } else {
+                $this->invoice_number_counter += 1;
+            }
         }
         
         $this->save();
@@ -572,6 +599,21 @@ class Account extends Eloquent
         }
     }
 
+    public function getLogoSize()
+    {
+        if (!$this->hasLogo()) {
+            return 0;
+        }
+
+        $filename = $this->getLogoPath();
+        return round(File::size($filename) / 1000);
+    }
+
+    public function isLogoTooLarge()
+    {
+        return $this->getLogoSize() > MAX_LOGO_FILE_SIZE;
+    }
+
     public function getSubscription($eventId)
     {
         return Subscription::where('account_id', '=', $this->id)->where('event_id', '=', $eventId)->first();
@@ -652,9 +694,9 @@ class Account extends Eloquent
             $entityType = ENTITY_INVOICE;
         }
 
-        $template = "<div>\$client,</div><br/>" .
-                    "<div>" . trans("texts.{$entityType}_message", ['amount' => '$amount']) . "</div><br/>" .
-                    "<div><a href=\"\$link\">\$link</a></div><br/>";
+        $template = "<div>\$client,</div><br>" .
+                    "<div>" . trans("texts.{$entityType}_message", ['amount' => '$amount']) . "</div><br>" .
+                    "<div><a href=\"\$viewLink\">\$viewLink</a></div><br>";
 
         if ($message) {
             $template .= "$message<p/>\r\n\r\n";
@@ -668,13 +710,14 @@ class Account extends Eloquent
         if ($this->isPro()) {
             $field = "email_template_{$entityType}";
             $template = $this->$field;
-
-            if ($template) {
-                return $template;
-            }
         }
         
-        return $this->getDefaultEmailTemplate($entityType, $message);
+        if (!$template) {
+            $template = $this->getDefaultEmailTemplate($entityType, $message);
+        }
+
+        // <br/> is causing page breaks with the email designs
+        return str_replace('/>', ' />', $template);
     }
 
     public function getEmailFooter()
@@ -683,7 +726,7 @@ class Account extends Eloquent
             // Add line breaks if HTML isn't already being used
             return strip_tags($this->email_footer) == $this->email_footer ? nl2br($this->email_footer) : $this->email_footer;
         } else {
-            return "<p>" . trans('texts.email_signature') . "\n<br>\$account</p>";
+            return "<p>" . trans('texts.email_signature') . "\n<br>\$account</ p>";
         }
     }
 
