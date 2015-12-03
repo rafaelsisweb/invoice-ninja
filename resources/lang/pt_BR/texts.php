@@ -351,7 +351,7 @@ return array(
   // Quotes
   'quote' => 'Orçamento',
   'quotes' => 'Orçamentos',
-  'quote_number' => 'Oramento',
+  'quote_number' => 'Orçamento',
   'quote_number_short' => '#',
   'quote_date' => 'Data do Orçamento',
   'quote_total' => 'Total do Orçamento',
