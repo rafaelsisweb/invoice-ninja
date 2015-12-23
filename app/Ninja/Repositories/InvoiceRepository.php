@@ -317,6 +317,7 @@ class InvoiceRepository extends BaseRepository
                 $total -= $invoice->discount;
             } else {
                 $total *= (100 - $invoice->discount) / 100;
+                $total = round($total, 2);
             }
         }
 
@@ -384,19 +385,24 @@ class InvoiceRepository extends BaseRepository
                 $task->invoice_id = $invoice->id;
                 $task->client_id = $invoice->client_id;
                 $task->save();
-            } elseif (isset($item['product_key']) && $item['product_key'] && !$invoice->has_tasks) {
-                $product = Product::findProductByKey(trim($item['product_key']));
+            }
 
-                if (\Auth::user()->account->update_products) {
-                    if (!$product) {
-                        $product = Product::createNew();
-                        $product->product_key = trim($item['product_key']);
-                    }
-
-                    $product->notes = $item['notes'];
-                    $product->cost = $item['cost'];
-                    $product->save();
+            if ($item['product_key']) {
+                if (!\Auth::user()->account->update_products) {
+                    continue;
                 }
+                $productKey = trim($item['product_key']);
+                if (strtotime($productKey)) {
+                    continue;
+                }
+                $product = Product::findProductByKey($productKey);
+                if (!$product) {
+                    $product = Product::createNew();
+                    $product->product_key = trim($item['product_key']);
+                }
+                $product->notes = $invoice->has_tasks ? '' : $item['notes'];
+                $product->cost = $item['cost'];
+                $product->save();
             }
 
             $invoiceItem = InvoiceItem::createNew();
@@ -434,7 +440,10 @@ class InvoiceRepository extends BaseRepository
                 $invoiceNumber = substr($invoiceNumber, strlen($account->quote_number_prefix));
             }
             $invoiceNumber = $account->invoice_number_prefix.$invoiceNumber;
-            if (Invoice::scope()->withTrashed()->whereInvoiceNumber($invoiceNumber)->first()) {
+            if (Invoice::scope(false, $account->id)
+                    ->withTrashed()
+                    ->whereInvoiceNumber($invoiceNumber)
+                    ->first()) {
                 $invoiceNumber = false;
             }
         }
@@ -622,6 +631,8 @@ class InvoiceRepository extends BaseRepository
 
         if ($recurInvoice->auto_bill) {
             if ($this->paymentService->autoBillInvoice($invoice)) {
+                // update the invoice reference to match its actual state
+                // this is to ensure a 'payment received' email is sent
                 $invoice->invoice_status_id = INVOICE_STATUS_PAID;
             }
         }

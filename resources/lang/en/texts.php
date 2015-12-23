@@ -88,7 +88,7 @@ return array(
     'company_details' => 'Company Details',
     'online_payments' => 'Online Payments',
     'notifications' => 'Email Notifications',
-    'import_export' => 'Import/Export',
+    'import_export' => 'Import/Export/Cancel',
     'done' => 'Done',
     'save' => 'Save',
     'create' => 'Create',
@@ -212,7 +212,7 @@ return array(
 
     // application messages
     'created_client' => 'Successfully created client',
-    'created_clients' => 'Successfully created :count clients',
+    'created_clients' => 'Successfully created :count client(s)',
     'updated_settings' => 'Successfully updated settings',
     'removed_logo' => 'Successfully removed logo',
     'sent_message' => 'Successfully sent message',
@@ -265,7 +265,7 @@ return array(
     'email_signature' => 'Regards,',
     'email_from' => 'The Invoice Ninja Team',
     'user_email_footer' => 'To adjust your email notification settings please visit '.SITE_URL.'/settings/notifications',
-    'invoice_link_message' => 'To view your client invoice click the link below:',
+    'invoice_link_message' => 'To view the invoice click the link below:',
     'notification_invoice_paid_subject' => 'Invoice :invoice was paid by :client',
     'notification_invoice_sent_subject' => 'Invoice :invoice was sent to :client',
     'notification_invoice_viewed_subject' => 'Invoice :invoice was viewed by :client',
@@ -970,11 +970,18 @@ return array(
     'invoice_number_help' => 'Specify a prefix or use a custom pattern to dynamically set the invoice number.',
     'quote_number_help' => 'Specify a prefix or use a custom pattern to dynamically set the quote number.',
     'custom_client_fields_helps' => 'Add a text input to the client create/edit page and display the label and value on the PDF.',
-    'custom_account_fields_helps' => 'Add the label and value to the company details section of the PDF.',
+    'custom_account_fields_helps' => 'Add a label and value to the company details section of the PDF.',
     'custom_invoice_fields_helps' => 'Add a text input to the invoice create/edit page and display the label and value on the PDF.',
     'custom_invoice_charges_helps' => 'Add a text input to the invoice create/edit page and include the charge in the invoice subtotals.',
     'color_help' => 'Note: the primary color is also used in the client portal and custom email designs.',
 
-
+    'token_expired' => 'Validation token was expired. Please try again.',
+    'invoice_link' => 'Invoice Link',
+    'button_confirmation_message' => 'Click to confirm your email address.',
+    'confirm' => 'Confirm',
+    'email_preferences' => 'Email Preferences',
+    'created_invoices' => 'Successfully created :count invoice(s)',
+    'next_invoice_number' => 'The next invoice number is :number.',
+    'next_quote_number' => 'The next quote number is :number.',
 
 );

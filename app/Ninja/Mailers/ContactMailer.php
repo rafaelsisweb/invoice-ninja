@@ -25,6 +25,7 @@ class ContactMailer extends Mailer
         'firstName',
         'invoice',
         'quote',
+        'dueDate',
         'viewLink',
         'viewButton',
         'paymentLink',
@@ -172,7 +173,12 @@ class ContactMailer extends Mailer
 
         $data = [
             'body' => $this->processVariables($emailTemplate, $variables),
+            'link' => $invitation->getLink(),
+            'invoice' => $invoice,
+            'client' => $client,
             'account' => $account,
+            'payment' => $payment,
+            'entityType' => ENTITY_INVOICE,
         ];
 
         if ($account->attatchPDF()) {
@@ -204,7 +210,6 @@ class ContactMailer extends Mailer
         }
         
         $data = [
-            'account' => trans('texts.email_from'),
             'client' => $name,
             'amount' => Utils::formatMoney($amount, DEFAULT_CURRENCY, DEFAULT_COUNTRY),
             'license' => $license
@@ -230,10 +235,15 @@ class ContactMailer extends Mailer
             '$invoice' => $invoice->invoice_number,
             '$quote' => $invoice->invoice_number,
             '$link' => $invitation->getLink(),
+            '$dueDate' => $account->formatDate($invoice->due_date),
             '$viewLink' => $invitation->getLink(),
             '$viewButton' => HTML::emailViewButton($invitation->getLink(), $invoice->getEntityType()),
             '$paymentLink' => $invitation->getLink('payment'),
             '$paymentButton' => HTML::emailPaymentButton($invitation->getLink('payment')),
+            '$customClient1' => $account->custom_client_label1,
+            '$customClient2' => $account->custom_client_label2,
+            '$customInvoice1' => $account->custom_invoice_text_label1,
+            '$customInvoice2' => $account->custom_invoice_text_label2,
         ];
 
         // Add variables for available payment types

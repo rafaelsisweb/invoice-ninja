@@ -3,6 +3,7 @@
 @section('head')
     @parent
 
+    @include('money_script')
     <link href="{{ asset('css/quill.snow.css') }}" rel="stylesheet" type="text/css"/>
     <script src="{{ asset('js/quill.min.js') }}" type="text/javascript"></script>
 
@@ -35,32 +36,7 @@
     {!! Former::populateField('enable_reminder1', intval($account->enable_reminder1)) !!}
     {!! Former::populateField('enable_reminder2', intval($account->enable_reminder2)) !!}
     {!! Former::populateField('enable_reminder3', intval($account->enable_reminder3)) !!}    
-    {!! Former::populateField('enable_email_markup', intval($account->enable_email_markup)) !!}
 
-
-    <div class="panel panel-default">
-        <div class="panel-heading">
-            <h3 class="panel-title">{!! trans('texts.email_design') !!}</h3>
-        </div>
-        <div class="panel-body">
-
-            {!! Former::select('email_design_id')
-                        ->style('width: 200px')
-                        ->addOption(trans('texts.plain'), 1)
-                        ->addOption(trans('texts.light'), 2)
-                        ->addOption(trans('texts.dark'), 3)
-                        ->help(trans('texts.email_design_help')) !!}
-
-            @if (Utils::isNinja())
-                &nbsp;
-                {!! Former::checkbox('enable_email_markup')
-                        ->text(trans('texts.enable_email_markup'))
-                        ->label('')
-                        ->help(trans('texts.enable_email_markup_help')) !!} 
-                {!! link_to(EMAIL_MARKUP_URL, trans('texts.learn_more'), ['target' => '_blank']) !!}
-            @endif
-        </div>
-    </div>
 
     <div class="panel panel-default">
         <div class="panel-heading">
@@ -123,6 +99,18 @@
                         @foreach (\App\Ninja\Mailers\ContactMailer::$variableFields as $field)
                             <li>${{ $field }}</li>
                         @endforeach
+                        @if ($account->custom_client_label1)
+                            <li>$customClient1</li>
+                        @endif
+                        @if ($account->custom_client_label2)
+                            <li>$customClient2</li>
+                        @endif
+                        @if ($account->custom_invoice_text_label1)
+                            <li>$customInvoice1</li>
+                        @endif
+                        @if ($account->custom_invoice_text_label2)
+                            <li>$customInvoice1</li>
+                        @endif
                         @if (count($account->account_gateways) > 1)
                             @foreach (\App\Models\Gateway::$paymentTypes as $type)
                                 @if ($account->getGatewayByType($type))
@@ -208,18 +196,23 @@
             var keys = {!! json_encode(\App\Ninja\Mailers\ContactMailer::$variableFields) !!};
             var vals = [
                 {!! json_encode($emailFooter) !!}, 
-                "{{ Auth::user()->account->getDisplayName() }}", 
+                "{{ $account->getDisplayName() }}", 
                 "Client Name", 
                 formatMoney(100), 
                 "Contact Name", 
                 "First Name",
                 "0001", 
                 "0001",
+                "{{ $account->formatDate($account->getDateTime()) }}",
                 "{{ URL::to('/view/...') }}", 
                 '{!! HTML::flatButton('view_invoice', '#0b4d78') !!}',
                 "{{ URL::to('/payment/...') }}", 
                 '{!! HTML::flatButton('pay_now', '#36c157') !!}',
             ];
+
+            // Add blanks for custom values
+            keys.push('customClient1', 'customClient2', 'customInvoice1', 'customInvoice2');
+            vals.push('custom value', 'custom value', 'custom value', 'custom value');
 
             // Add any available payment method links
             @foreach (\App\Models\Gateway::$paymentTypes as $type)

@@ -35,6 +35,7 @@ class Account extends Eloquent
     public static $advancedSettings = [
         ACCOUNT_INVOICE_SETTINGS,
         ACCOUNT_INVOICE_DESIGN,
+        ACCOUNT_EMAIL_SETTINGS,
         ACCOUNT_TEMPLATES_AND_REMINDERS,
         ACCOUNT_CHARTS_AND_REPORTS,
         ACCOUNT_DATA_VISUALIZATIONS,
@@ -186,6 +187,15 @@ class Account extends Eloquent
         return $format;
     }
 
+    public function getMomentDateFormat()
+    {
+        $format = $this->getMomentDateTimeFormat();
+        $format = str_replace('h:mm:ss a', '', $format);
+        $format = str_replace('H:mm:ss', '', $format);
+
+        return trim($format);
+    }
+
     public function getTimezone()
     {
         if ($this->timezone) {
@@ -239,11 +249,29 @@ class Account extends Eloquent
 
     public function formatDateTime($date)
     {
-        if (!$date) {
+        if ( ! $date) {
             return null;
+        } elseif ( ! $date instanceof \DateTime) {
+            $date = new \DateTime($date);
         }
 
         return $date->format($this->getCustomDateTimeFormat());
+    }
+
+    public function formatTime($date)
+    {
+        if ( ! $date) {
+            return null;
+        } elseif ( ! $date instanceof \DateTime) {
+            $date = new \DateTime($date);
+        }
+
+        return $date->format($this->getCustomTimeFormat());
+    }
+
+    public function getCustomTimeFormat()
+    {
+        return $this->military_time ? 'H:i' : 'g:i a';
     }
 
     public function getCustomDateTimeFormat()
@@ -431,6 +459,12 @@ class Account extends Eloquent
         return $isQuote && !$this->share_counter ? $this->quote_number_counter : $this->invoice_number_counter;
     }
 
+    public function previewNextInvoiceNumber($entityType = ENTITY_INVOICE)
+    {
+        $invoice = $this->createInvoice($entityType);
+        return $this->getNextInvoiceNumber($invoice);
+    }
+
     public function getNextInvoiceNumber($invoice)
     {
         if ($this->hasNumberPattern($invoice->is_quote)) {
@@ -443,7 +477,7 @@ class Account extends Eloquent
 
         // confirm the invoice number isn't already taken 
         do {
-            $number = $prefix.str_pad($counter, 4, '0', STR_PAD_LEFT);
+            $number = $prefix . str_pad($counter, 4, '0', STR_PAD_LEFT);
             $check = Invoice::scope(false, $this->id)->whereInvoiceNumber($number)->withTrashed()->first();
             $counter++;
             $counterOffset++;
@@ -542,7 +576,7 @@ class Account extends Eloquent
             'quote_number',
             'total',
             'invoice_issued_to',
-            'date',
+            //'date',
             'rate',
             'hours',
             'balance',
@@ -703,7 +737,7 @@ class Account extends Eloquent
 
         $template = "<div>\$client,</div><br>" .
                     "<div>" . trans("texts.{$entityType}_message", ['amount' => '$amount']) . "</div><br>" .
-                    "<div><a href=\"\$viewLink\">\$viewLink</a></div><br>";
+                    "<div>\$viewLink</div><br>";
 
         if ($message) {
             $template .= "$message<p/>\r\n\r\n";
@@ -714,6 +748,8 @@ class Account extends Eloquent
 
     public function getEmailTemplate($entityType, $message = false)
     {
+        $template = false;
+
         if ($this->isPro()) {
             $field = "email_template_{$entityType}";
             $template = $this->$field;

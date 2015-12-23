@@ -134,13 +134,14 @@ class PaymentController extends BaseController
         if ($paymentType) {
             $paymentType = 'PAYMENT_TYPE_' . strtoupper($paymentType);
         } else {
-            $paymentType = Session::get('payment_type', $account->account_gateways[0]->getPaymentType());
+            $paymentType = Session::get($invitation->id . 'payment_type') ?:
+                                $account->account_gateways[0]->getPaymentType();
         }
         if ($paymentType == PAYMENT_TYPE_TOKEN) {
             $useToken = true;
             $paymentType = PAYMENT_TYPE_CREDIT_CARD;
         }
-        Session::put('payment_type', $paymentType);
+        Session::put($invitation->id . 'payment_type', $paymentType);
 
         $accountGateway = $invoice->client->account->getGatewayByType($paymentType);
         $gateway = $accountGateway->gateway;
@@ -210,7 +211,7 @@ class PaymentController extends BaseController
 
         $account = $this->accountRepo->getNinjaAccount();
         $account->load('account_gateways.gateway');
-        $accountGateway = $account->getGatewayByType(Session::get('payment_type'));
+        $accountGateway = $account->getGatewayByType(PAYMENT_TYPE_CREDIT_CARD);
         $gateway = $accountGateway->gateway;
         $acceptedCreditCardTypes = $accountGateway->getCreditcardTypes();
 
@@ -345,7 +346,7 @@ class PaymentController extends BaseController
         $invoice = $invitation->invoice;
         $client = $invoice->client;
         $account = $client->account;
-        $accountGateway = $account->getGatewayByType(Session::get('payment_type'));
+        $accountGateway = $account->getGatewayByType(Session::get($invitation->id . 'payment_type'));
 
         $rules = [
             'first_name' => 'required',
@@ -380,7 +381,7 @@ class PaymentController extends BaseController
             if ($validator->fails()) {
                 return Redirect::to('payment/'.$invitationKey)
                     ->withErrors($validator)
-                    ->withInput();
+                    ->withInput(Request::except('cvv'));
             }
 
             if ($accountGateway->update_address) {
@@ -421,7 +422,8 @@ class PaymentController extends BaseController
                         $details['customerReference'] = $token;
                     } else {
                         $this->error('Token-No-Ref', $this->paymentService->lastError, $accountGateway);
-                        return Redirect::to('payment/'.$invitationKey)->withInput();
+                        return Redirect::to('payment/'.$invitationKey)
+                                ->withInput(Request::except('cvv'));
                     }
                 }
             }
@@ -442,14 +444,15 @@ class PaymentController extends BaseController
                 $this->error('No-Ref', $response->getMessage(), $accountGateway);
 
                 if ($onSite) {
-                    return Redirect::to('payment/'.$invitationKey)->withInput();
+                    return Redirect::to('payment/'.$invitationKey)
+                            ->withInput(Request::except('cvv'));
                 } else {
                     return Redirect::to('view/'.$invitationKey);
                 }
             }
 
             if ($response->isSuccessful()) {
-                $payment = $this->paymentService->createPayment($invitation, $ref);
+                $payment = $this->paymentService->createPayment($invitation, $accountGateway, $ref);
                 Session::flash('message', trans('texts.applied_payment'));
 
                 if ($account->account_key == NINJA_ACCOUNT_KEY) {
@@ -471,7 +474,7 @@ class PaymentController extends BaseController
         } catch (\Exception $e) {
             $this->error('Uncaught', false, $accountGateway, $e);
             if ($onSite) {
-                return Redirect::to('payment/'.$invitationKey)->withInput();
+                return Redirect::to('payment/'.$invitationKey)->withInput(Request::except('cvv'));
             } else {
                 return Redirect::to('view/'.$invitationKey);
             }
@@ -496,7 +499,7 @@ class PaymentController extends BaseController
         $client = $invoice->client;
         $account = $client->account;
 
-        $accountGateway = $account->getGatewayByType(Session::get('payment_type'));
+        $accountGateway = $account->getGatewayByType(Session::get($invitation->id . 'payment_type'));
         $gateway = $this->paymentService->createGateway($accountGateway);
 
         // Check for Dwolla payment error
@@ -512,23 +515,22 @@ class PaymentController extends BaseController
 
         try {
             if (method_exists($gateway, 'completePurchase') 
-                && !$accountGateway->isGateway(GATEWAY_TWO_CHECKOUT)
-                && !$accountGateway->isGateway(GATEWAY_MOLLIE)) { // TODO: implement webhook
+                && !$accountGateway->isGateway(GATEWAY_TWO_CHECKOUT)) {
                 $details = $this->paymentService->getPaymentDetails($invitation, $accountGateway);
-                $response = $gateway->completePurchase($details)->send();
+                $response = $this->paymentService->completePurchase($gateway, $accountGateway, $details, $token);
                 $ref = $response->getTransactionReference() ?: $token;
 
-                if ($response->isSuccessful()) {
-                    $payment = $this->paymentService->createPayment($invitation, $ref, $payerId);
+                if ($response->isCancelled()) {
+                    // do nothing
+                } elseif ($response->isSuccessful()) {
+                    $payment = $this->paymentService->createPayment($invitation, $accountGateway, $ref, $payerId);
                     Session::flash('message', trans('texts.applied_payment'));
-
-                    return Redirect::to($invitation->getLink());
                 } else {
                     $this->error('offsite', $response->getMessage(), $accountGateway);
-                    return Redirect::to($invitation->getLink());
                 }
+                return Redirect::to($invitation->getLink());
             } else {
-                $payment = $this->paymentService->createPayment($invitation, $token, $payerId);
+                $payment = $this->paymentService->createPayment($invitation, $accountGateway, $token, $payerId);
                 Session::flash('message', trans('texts.applied_payment'));
 
                 return Redirect::to($invitation->getLink());

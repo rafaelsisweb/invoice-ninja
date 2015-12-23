@@ -31,6 +31,12 @@ class BaseTransformer extends TransformerAbstract
         return isset($this->maps['countries'][$name]) ? $this->maps['countries'][$name] : null;
     }
 
+    protected function getCountryIdBy2($name)
+    {
+        $name = strtolower($name);
+        return isset($this->maps['countries2'][$name]) ? $this->maps['countries2'][$name] : null;
+    }
+
     protected function getFirstName($name)
     {
         $name = Utils::splitName($name);
@@ -39,7 +45,10 @@ class BaseTransformer extends TransformerAbstract
 
     protected function getDate($date, $format = 'Y-m-d')
     {
-        $date = DateTime::createFromFormat($format, $date);
+        if ( ! $date instanceof DateTime) {
+            $date = DateTime::createFromFormat($format, $date);
+        }
+        
         return $date ? $date->format('Y-m-d') : null;
     }
 
@@ -49,9 +58,15 @@ class BaseTransformer extends TransformerAbstract
         return $name[1];
     }
 
+    protected function getInvoiceNumber($number)
+    {
+        $number = strtolower($number);
+        return str_pad($number, 4, '0', STR_PAD_LEFT);
+    }
+
     protected function hasInvoice($invoiceNumber)
     {
-        $invoiceNumber = strtolower($invoiceNumber);
+        $invoiceNumber = $this->getInvoiceNumber($invoiceNumber);
         return isset($this->maps[ENTITY_INVOICE][$invoiceNumber]);
     }
 

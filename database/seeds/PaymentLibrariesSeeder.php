@@ -113,17 +113,20 @@ class PaymentLibrariesSeeder extends Seeder
             ['name' => 'Hong Kong Dollar', 'code' => 'HKD', 'symbol' => '$', 'precision' => '2', 'thousand_separator' => ',', 'decimal_separator' => '.'],
             ['name' => 'Indonesian Rupiah', 'code' => 'IDR', 'symbol' => 'Rp', 'precision' => '2', 'thousand_separator' => ',', 'decimal_separator' => '.'],
             ['name' => 'Mexican Peso', 'code' => 'MXN', 'symbol' => '$', 'precision' => '2', 'thousand_separator' => ',', 'decimal_separator' => '.'],
-            ['name' => 'Egyptian Pound', 'code' => 'EGP', 'symbol' => '£', 'precision' => '2', 'thousand_separator' => ',', 'decimal_separator' => '.'],
+            ['name' => 'Egyptian Pound', 'code' => 'EGP', 'symbol' => 'E£', 'precision' => '2', 'thousand_separator' => ',', 'decimal_separator' => '.'],
             ['name' => 'Colombian Peso', 'code' => 'COP', 'symbol' => '$', 'precision' => '2', 'thousand_separator' => '.', 'decimal_separator' => ','],
             ['name' => 'West African Franc', 'code' => 'XOF', 'symbol' => 'CFA ', 'precision' => '2', 'thousand_separator' => ',', 'decimal_separator' => '.'],
             ['name' => 'Chinese Renminbi', 'code' => 'CNY', 'symbol' => 'RMB ', 'precision' => '2', 'thousand_separator' => ',', 'decimal_separator' => '.'],
             ['name' => 'Rwandan Franc', 'code' => 'RWF', 'symbol' => 'RF ', 'precision' => '2', 'thousand_separator' => ',', 'decimal_separator' => '.'],
+            ['name' => 'Tanzanian Shilling', 'code' => 'TZS', 'symbol' => 'TSh ', 'precision' => '2', 'thousand_separator' => ',', 'decimal_separator' => '.'],
+            ['name' => 'Netherlands Antillean Guilder', 'code' => 'ANG', 'symbol' => 'ANG ', 'precision' => '2', 'thousand_separator' => '.', 'decimal_separator' => ','],
         ];
 
         foreach ($currencies as $currency) {
             $record = Currency::whereCode($currency['code'])->first();
             if ($record) {
                 $record->name = $currency['name'];
+                $record->symbol = $currency['symbol'];
                 $record->thousand_separator = $currency['thousand_separator'];
                 $record->decimal_separator = $currency['decimal_separator'];
                 $record->save();
@@ -209,8 +212,8 @@ class PaymentLibrariesSeeder extends Seeder
                 'label' => '20-03-2013 6:15 pm'
             ],
             [
-                'format' => 'm/d/Y g:i',
-                'format_moment' => 'MM/DD/YYYY h:mm:ss',
+                'format' => 'm/d/Y g:i a',
+                'format_moment' => 'MM/DD/YYYY h:mm:ss a',
                 'label' => '03/20/2013 6:15 pm'
             ]
         ];

@@ -684,7 +684,7 @@ class Utils
 
     public static function isEmpty($value)
     {
-        return !$value || $value == '0.00' || $value == '0,00';
+        return !$value || $value == '0' || $value == '0.00' || $value == '0,00';
     }
 
     public static function startsWith($haystack, $needle)
@@ -802,7 +802,7 @@ class Utils
     public static function decodePDF($string)
     {
         $string = str_replace('data:application/pdf;base64,', '', $string);
-        return  base64_decode($string);
+        return base64_decode($string);
     }
 
     public static function cityStateZip($city, $state, $postalCode, $swap)
@@ -886,5 +886,14 @@ class Utils
         $interval = $today->diff($datePaid);
 
         return $interval->y == 0;
+    }
+
+    public static function addHttp($url)
+    {
+        if (!preg_match("~^(?:f|ht)tps?://~i", $url)) {
+            $url = "http://" . $url;
+        }
+        
+        return $url;
     }
 }

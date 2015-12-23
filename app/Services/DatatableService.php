@@ -41,17 +41,17 @@ class DatatableService
     private function createDropdown($entityType, $table, $actions)
     {
         $table->addColumn('dropdown', function ($model) use ($entityType, $actions) {
-            $str = '<center>';
+            $str = '<center style="min-width:100px">';
 
             if (property_exists($model, 'is_deleted') && $model->is_deleted) {
-                $str .= '<button type="button" class="btn btn-sm btn-danger tr-status" style="display:inline-block; width:100px">'.trans('texts.deleted').'</button>';
+                $str .= '<button type="button" class="btn btn-sm btn-danger tr-status">'.trans('texts.deleted').'</button>';
             } elseif ($model->deleted_at && $model->deleted_at !== '0000-00-00') {
-                $str .= '<button type="button" class="btn btn-sm btn-warning tr-status" style="display:inline-block; width:100px">'.trans('texts.archived').'</button>';
+                $str .= '<button type="button" class="btn btn-sm btn-warning tr-status">'.trans('texts.archived').'</button>';
             } else {
-                $str .= '<div class="tr-status" style="display:inline-block; width:100px"></div>';
+                $str .= '<div class="tr-status"></div>';
             }
 
-            $str .= '<div class="btn-group tr-action" style="display:none;">
+            $str .= '<div class="btn-group tr-action" style="height:auto;display:none">
                     <button type="button" class="btn btn-xs btn-default dropdown-toggle" data-toggle="dropdown" style="width:100px">
                         '.trans('texts.select').' <span class="caret"></span>
                     </button>

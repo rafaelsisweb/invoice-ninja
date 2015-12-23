@@ -11,7 +11,7 @@
 |
 */
 
-//Cache::flush();
+//Crypt::decrypt();
 //apc_clear_cache();
 //dd(DB::getQueryLog());
 //dd(Client::getPrivateId(1));
@@ -25,13 +25,6 @@ Route::get('/setup', 'AppController@showSetup');
 Route::post('/setup', 'AppController@doSetup');
 Route::get('/install', 'AppController@install');
 Route::get('/update', 'AppController@update');
-
-/*
-// Codeception code coverage
-Route::get('/c3.php', function () {
-    include '../c3.php';
-});
-*/
 
 // Public pages
 Route::get('/', 'HomeController@showIndex');
@@ -69,7 +62,6 @@ Route::get('/auth_unlink', 'Auth\AuthController@authUnlink');
 
 Route::post('/hook/email_bounced', 'AppController@emailBounced');
 Route::post('/hook/email_opened', 'AppController@emailOpened');
-
 
 // Laravel auth routes
 get('/signup', array('as' => 'signup', 'uses' => 'Auth\AuthController@getRegister'));
@@ -285,6 +277,7 @@ if (!defined('CONTACT_EMAIL')) {
     define('ACCOUNT_ADVANCED_SETTINGS', 'advanced_settings');
     define('ACCOUNT_INVOICE_SETTINGS', 'invoice_settings');
     define('ACCOUNT_INVOICE_DESIGN', 'invoice_design');
+    define('ACCOUNT_EMAIL_SETTINGS', 'email_settings');
     define('ACCOUNT_CHARTS_AND_REPORTS', 'charts_and_reports');
     define('ACCOUNT_USER_MANAGEMENT', 'user_management');
     define('ACCOUNT_DATA_VISUALIZATIONS', 'data_visualizations');
@@ -340,7 +333,7 @@ if (!defined('CONTACT_EMAIL')) {
     define('MAX_SUBDOMAIN_LENGTH', 30);
     define('MAX_IFRAME_URL_LENGTH', 250);
     define('MAX_LOGO_FILE_SIZE', 200); // KB
-    define('MAX_FAILED_LOGINS', 5);
+    define('MAX_FAILED_LOGINS', 10);
     define('DEFAULT_FONT_SIZE', 9);
     define('DEFAULT_SEND_RECURRING_HOUR', 8);
 
@@ -440,8 +433,12 @@ if (!defined('CONTACT_EMAIL')) {
     define('NINJA_GATEWAY_CONFIG', 'NINJA_GATEWAY_CONFIG');
     define('NINJA_WEB_URL', 'https://www.invoiceninja.com');
     define('NINJA_APP_URL', 'https://app.invoiceninja.com');
-    define('NINJA_VERSION', '2.4.7');
+    define('NINJA_VERSION', '2.4.8');
     define('NINJA_DATE', '2000-01-01');
+
+    define('SOCIAL_LINK_FACEBOOK', 'https://www.facebook.com/invoiceninja');
+    define('SOCIAL_LINK_TWITTER', 'https://twitter.com/invoiceninja');
+    define('SOCIAL_LINK_GITHUB', 'https://github.com/invoiceninja/invoiceninja/');
 
     define('NINJA_FROM_EMAIL', 'maildelivery@invoiceninja.com');
     define('RELEASES_URL', 'https://trello.com/b/63BbiVVe/invoice-ninja');
@@ -451,7 +448,7 @@ if (!defined('CONTACT_EMAIL')) {
     define('PHANTOMJS_CLOUD', 'http://api.phantomjscloud.com/api/browser/v2/');
     define('PHP_DATE_FORMATS', 'http://php.net/manual/en/function.date.php');
     define('REFERRAL_PROGRAM_URL', 'https://www.invoiceninja.com/referral-program/');
-    define('EMAIL_MARKUP_URL', 'https://developers.google.com/gmail/markup/overview');
+    define('EMAIL_MARKUP_URL', 'https://developers.google.com/gmail/markup');
 
     define('COUNT_FREE_DESIGNS', 4);
     define('COUNT_FREE_DESIGNS_SELF_HOST', 5); // include the custom design
