@@ -515,11 +515,6 @@ class Account extends Eloquent
         $this->save();
     }
 
-    public function loadAllData()
-    {
-        $this->load('clients.getInvoices.invoice_items', 'clients.getQuotes.invoice_items', 'users', 'clients.contacts');
-    }
-
     public function loadLocalizationSettings($client = false)
     {
         $this->load('timezone', 'date_format', 'datetime_format', 'language');
@@ -771,6 +766,32 @@ class Account extends Eloquent
         } else {
             return "<p>" . trans('texts.email_signature') . "\n<br>\$account</ p>";
         }
+    }
+
+    public function getReminderDate($reminder)
+    {
+        if ( ! $this->{"enable_reminder{$reminder}"}) {
+            return false;
+        }
+
+        $numDays = $this->{"num_days_reminder{$reminder}"};
+        $plusMinus = $this->{"direction_reminder{$reminder}"} == REMINDER_DIRECTION_AFTER ? '-' : '+';
+
+        return date('Y-m-d', strtotime("$plusMinus $numDays days"));
+    }
+
+    public function getInvoiceReminder($invoice)
+    {
+        for ($i=1; $i<=3; $i++) {
+            if ($date = $this->getReminderDate($i)) {
+                $field = $this->{"field_reminder{$i}"} == REMINDER_FIELD_DUE_DATE ? 'due_date' : 'invoice_date';
+                if ($this->$field == $date) {
+                    return "reminder{$i}";
+                }
+            }
+        }
+
+        return false;
     }
 
     public function showTokenCheckbox()

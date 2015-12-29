@@ -526,7 +526,7 @@ class Invoice extends EntityModel implements BalanceAffecting
         }
 
         if ($this->end_date) {
-            $rule .= 'UNTIL=' . $this->end_date;
+            $rule .= 'UNTIL=' . $this->getOriginal('end_date');
         }
 
         return $rule;
@@ -590,24 +590,6 @@ class Invoice extends EntityModel implements BalanceAffecting
                 return $monthsSinceLastSent >= 12;
             default:
                 return false;
-        }
-
-        return false;
-    }
-
-    public function getReminder()
-    {
-        for ($i=1; $i<=3; $i++) {
-            $field = "enable_reminder{$i}";
-            if (!$this->account->$field) {
-                continue;
-            }
-            $field = "num_days_reminder{$i}";
-            $date = date('Y-m-d', strtotime("- {$this->account->$field} days"));
-
-            if ($this->due_date == $date) {
-                return "reminder{$i}";
-            }
         }
 
         return false;

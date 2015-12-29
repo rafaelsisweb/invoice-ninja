@@ -132,6 +132,7 @@
                 	@if ($invoice->recurring_invoice)
                         {!! trans('texts.created_by_invoice', ['invoice' => link_to('/invoices/'.$invoice->recurring_invoice->public_id, trans('texts.recurring_invoice'))]) !!}
     				@elseif ($invoice->id)
+                        <span class="smaller">
                         @if (isset($lastSent) && $lastSent)
                             {!! trans('texts.last_sent_on', ['date' => link_to('/invoices/'.$lastSent->public_id, $invoice->last_sent_date, ['id' => 'lastSent'])]) !!} <br/>
                         @endif
@@ -139,6 +140,7 @@
                             {!! trans('texts.next_send_on', ['date' => '<span data-bind="tooltip: {title: \''.$invoice->getPrettySchedule().'\', html: true}">'.$account->formatDate($invoice->getNextSendDate()).
                                     '<span class="glyphicon glyphicon-info-sign" style="padding-left:10px;color:#B1B5BA"></span></span>']) !!}
                         @endif
+                        </span>
                     @endif
                 </div>
             </div>
@@ -195,7 +197,6 @@
                 {!! Former::text('product_key')->useDatalist($products->toArray(), 'product_key')
                         ->data_bind("value: product_key, valueUpdate: 'afterkeydown', attr: {name: 'invoice_items[' + \$index() + '][product_key]'}")
                         ->addClass('datalist')
-                        ->onkeyup('onItemChange()')
                         ->raw()
                          !!}
 				</td>
@@ -205,12 +206,12 @@
                         <input type="text" data-bind="value: task_public_id, attr: {name: 'invoice_items[' + $index() + '][task_public_id]'}" style="display: none"/>
 				</td>
 				<td>
-					<input onkeyup="onItemChange()" data-bind="value: prettyCost, valueUpdate: 'afterkeydown', attr: {name: 'invoice_items[' + $index() + '][cost]'}" 
-                        style="text-align: right" class="form-control"/>
+					<input data-bind="value: prettyCost, valueUpdate: 'afterkeydown', attr: {name: 'invoice_items[' + $index() + '][cost]'}" 
+                        style="text-align: right" class="form-control invoice-item"/>
 				</td>
 				<td style="{{ $account->hide_quantity ? 'display:none' : '' }}">
-					<input onkeyup="onItemChange()" data-bind="value: prettyQty, valueUpdate: 'afterkeydown', attr: {name: 'invoice_items[' + $index() + '][qty]'}" 
-                        style="text-align: right" class="form-control" name="quantity"/>
+					<input data-bind="value: prettyQty, valueUpdate: 'afterkeydown', attr: {name: 'invoice_items[' + $index() + '][qty]'}" 
+                        style="text-align: right" class="form-control invoice-item" name="quantity"/>
 				</td>
 				<td style="display:none;" data-bind="visible: $root.invoice_item_taxes.show">
 					<select class="form-control" style="width:100%" data-bind="value: tax, options: $root.tax_rates, optionsText: 'displayName', attr: {name: 'invoice_items[' + $index() + '][tax]'}"></select>
@@ -726,7 +727,8 @@
 		
 		var $input = $('select#client');
 		$input.combobox().on('change', function(e) {
-			var clientId = parseInt($('input[name=client]').val(), 10);
+            var oldId = model.invoice().client().public_id();
+            var clientId = parseInt($('input[name=client]').val(), 10) || 0;
             if (clientId > 0) { 
                 var selected = clientMap[clientId];
 				model.loadClient(selected);
@@ -734,11 +736,12 @@
                 $('.client-input').val(getClientDisplayName(selected));
                 // if there's an invoice number pattern we'll apply it now
                 setInvoiceNumber(selected);
-			} else {
+                refreshPDF(true);
+			} else if (oldId) {
 				model.loadClient($.parseJSON(ko.toJSON(new ClientModel())));
 				model.invoice().client().country = false;
+                refreshPDF(true);
 			}
-            refreshPDF(true);
 		});
 
 		// If no clients exists show the client form when clicking on the client select input
@@ -749,7 +752,7 @@
 		}		
 
 		$('#invoice_footer, #terms, #public_notes, #invoice_number, #invoice_date, #due_date, #start_date, #po_number, #discount, #currency_id, #invoice_design_id, #recurring, #is_amount_discount, #partial, #custom_text_value1, #custom_text_value2').change(function() {
-			setTimeout(function() {                
+			setTimeout(function() {
 				refreshPDF(true);
 			}, 1);
 		});
@@ -788,8 +791,6 @@
 		});
 
 		$('label.radio').addClass('radio-inline');
-
-		applyComboboxListeners();
 		
 		@if ($invoice->client->id)
 			$input.trigger('change');
@@ -805,12 +806,15 @@
         @if (isset($tasks) && $tasks)
             NINJA.formIsChanged = true;
         @endif
+
+        applyComboboxListeners();
 	});	
 
 	function applyComboboxListeners() {
-        var selectorStr = '.invoice-table input, .invoice-table select, .invoice-table textarea';		
-		$(selectorStr).off('blur').on('blur', function() {
-			refreshPDF(true);
+        var selectorStr = '.invoice-table input, .invoice-table select, .invoice-table textarea';
+		$(selectorStr).off('change').on('change', function(event) {
+            onItemChange();
+            refreshPDF(true);
 		});
 
         $('textarea').on('keyup focus', function(e) {            
@@ -820,7 +824,7 @@
         });
 
 		@if (Auth::user()->account->fill_products)
-			$('.datalist').on('input', function() {
+			$('.datalist').off('input').on('input', function() {
 				var key = $(this).val();
 				for (var i=0; i<products.length; i++) {
 					var product = products[i];
@@ -838,11 +842,11 @@
                                 model.tax(self.model.getTaxRateById(product.default_tax_rate.public_id));
                             }
                         @endif
-						break;
+                        model.product_key(key);
+                        onItemChange();
+                        break;
 					}
 				}
-                onItemChange();
-                refreshPDF();
 			});
 		@endif
 	}
@@ -854,7 +858,7 @@
 		invoice.contact = _.findWhere(invoice.client.contacts, {send_invoice: true});
 
         if (invoice.is_recurring) {
-            invoice.invoice_number = '0000';
+            invoice.invoice_number = "{{ trans('texts.assigned_when_sent') }}";
             if (invoice.start_date) {
                 invoice.invoice_date = invoice.start_date;
             }
@@ -962,14 +966,14 @@
             if (contact.send_invoice()) {
                 parts.push(contact.displayName());
             }
-        }        
+        }
 
         return parts.join('\n');
     }
 
     function preparePdfData(action) {
         var invoice = createInvoiceModel();
-        var design  = getDesignJavascript();
+        var design = getDesignJavascript();
         if (!design) return;
         
         doc = generatePDF(invoice, design, true);

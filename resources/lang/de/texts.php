@@ -596,8 +596,8 @@ return array(
     'more_fields' => 'Weitere Felder',
     'less_fields' => 'Weniger Felder',
     'client_name' => 'Kundenname',
-    'pdf_settings' => 'PDF Einstellungen',
-    'product_settings' => 'Produkt Einstellungen',
+    'pdf_settings' => 'PDF-Einstellungen',
+    'product_settings' => 'Produkt-Einstellungen',
     'auto_wrap' => 'Automatischer Zeilenumbruch',
     'duplicate_post' => 'Achtung: Die vorherige Seite wurde zweimal abgeschickt. Das zweite Abschicken wurde ignoriert.',
     'view_documentation' => 'Dokumentation anzeigen',
@@ -830,7 +830,7 @@ return array(
     'referral_code_help' => 'Verdiene Geld, wenn du unsere App online teilst',
 
     'enable_with_stripe' => 'Enable | Requires Stripe',
-    'tax_settings' => 'Steuer Einstellungen',
+    'tax_settings' => 'Steuer-Einstellungen',
     'create_tax_rate' => 'Neuer Steuersatz',
     'updated_tax_rate' => 'Steuersatz aktualisiert',
     'created_tax_rate' => 'Steuersatz erstellt',
@@ -982,5 +982,13 @@ return array(
     'created_invoices' => 'Successfully created :count invoice(s)',
     'next_invoice_number' => 'The next invoice number is :number.',
     'next_quote_number' => 'The next quote number is :number.',
+
+    'days_before' => 'days before',
+    'days_after' => 'days after',
+    'field_due_date' => 'due date',
+    'field_invoice_date' => 'invoice date',
+    'schedule' => 'Schedule',
+    'email_designs' => 'Email Designs',
+    'assigned_when_sent' => 'Assigned when sent',
     
 );
