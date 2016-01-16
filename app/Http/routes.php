@@ -278,6 +278,7 @@ if (!defined('CONTACT_EMAIL')) {
     define('ACCOUNT_ADVANCED_SETTINGS', 'advanced_settings');
     define('ACCOUNT_INVOICE_SETTINGS', 'invoice_settings');
     define('ACCOUNT_INVOICE_DESIGN', 'invoice_design');
+    define('ACCOUNT_CLIENT_PORTAL', 'client_portal');
     define('ACCOUNT_EMAIL_SETTINGS', 'email_settings');
     define('ACCOUNT_CHARTS_AND_REPORTS', 'charts_and_reports');
     define('ACCOUNT_USER_MANAGEMENT', 'user_management');
@@ -336,6 +337,8 @@ if (!defined('CONTACT_EMAIL')) {
     define('MAX_LOGO_FILE_SIZE', 200); // KB
     define('MAX_FAILED_LOGINS', 10);
     define('DEFAULT_FONT_SIZE', 9);
+    define('DEFAULT_HEADER_FONT', 1);// Roboto
+    define('DEFAULT_BODY_FONT', 1);// Roboto
     define('DEFAULT_SEND_RECURRING_HOUR', 8);
 
     define('IMPORT_CSV', 'CSV');
@@ -420,6 +423,7 @@ if (!defined('CONTACT_EMAIL')) {
     define('GATEWAY_MOOLAH', 31);
     define('GATEWAY_BITPAY', 42);
     define('GATEWAY_DWOLLA', 43);
+    define('GATEWAY_CHECKOUT_COM', 47);
 
     define('EVENT_CREATE_CLIENT', 1);
     define('EVENT_CREATE_INVOICE', 2);
@@ -434,7 +438,7 @@ if (!defined('CONTACT_EMAIL')) {
     define('NINJA_GATEWAY_CONFIG', 'NINJA_GATEWAY_CONFIG');
     define('NINJA_WEB_URL', 'https://www.invoiceninja.com');
     define('NINJA_APP_URL', 'https://app.invoiceninja.com');
-    define('NINJA_VERSION', '2.4.8.1');
+    define('NINJA_VERSION', '2.4.9.5');
     define('NINJA_DATE', '2000-01-01');
 
     define('SOCIAL_LINK_FACEBOOK', 'https://www.facebook.com/invoiceninja');
@@ -536,6 +540,7 @@ if (!defined('CONTACT_EMAIL')) {
         'invoiceStatus' => 'App\Models\InvoiceStatus',
         'frequencies' => 'App\Models\Frequency',
         'gateways' => 'App\Models\Gateway',
+        'fonts' => 'App\Models\Font',
     ];
     define('CACHED_TABLES', serialize($cachedTables));
 

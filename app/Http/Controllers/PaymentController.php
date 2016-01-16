@@ -177,6 +177,8 @@ class PaymentController extends BaseController
             'account' => $client->account,
             'hideLogo' => $account->isWhiteLabel(),
             'hideHeader' => $account->isNinjaAccount(),
+            'clientViewCSS' => $account->clientViewCSS(),
+            'clientFontUrl' => $account->getFontsUrl(),
             'showAddress' => $accountGateway->show_address,
         ];
 
@@ -495,7 +497,6 @@ class PaymentController extends BaseController
         if (!$token) {
             $token = Session::pull('transaction_reference');
         }
-
         if (!$token) {
             return redirect(NINJA_WEB_URL);
         }
@@ -505,7 +506,17 @@ class PaymentController extends BaseController
         $client = $invoice->client;
         $account = $client->account;
 
-        $accountGateway = $account->getGatewayByType(Session::get($invitation->id . 'payment_type'));
+        if ($payerId) {
+            $paymentType = PAYMENT_TYPE_PAYPAL;
+        } else {
+            $paymentType = Session::get($invitation->id . 'payment_type');
+        }
+        if (!$paymentType) {
+            $this->error('No-Payment-Type', false, false);
+            return Redirect::to($invitation->getLink());
+        }
+
+        $accountGateway = $account->getGatewayByType($paymentType);
         $gateway = $this->paymentService->createGateway($accountGateway);
 
         // Check for Dwolla payment error
@@ -588,7 +599,7 @@ class PaymentController extends BaseController
         return Redirect::to('payments');
     }
 
-    private function error($type, $error, $accountGateway, $exception = false)
+    private function error($type, $error, $accountGateway = false, $exception = false)
     {
         $message = '';
         if ($accountGateway && $accountGateway->gateway) {

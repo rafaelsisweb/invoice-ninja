@@ -203,7 +203,9 @@ return array(
     'client_will_create' => 'client will be created',
     'clients_will_create' => 'clients will be created',
     'email_settings' => 'Email Settings',
+    'client_view_styling' => 'Client View Styling',
     'pdf_email_attachment' => 'Attach PDFs',
+    'custom_css' => 'Custom CSS',
 
     //import CSV data pages
     'import_clients' => 'Import Client Data',
@@ -240,6 +242,7 @@ return array(
     'deleted_invoices' => 'Successfully deleted :count invoices',
 
     'created_payment' => 'Successfully created payment',
+    'created_payments' => 'Successfully created :count payment(s)',
     'archived_payment' => 'Successfully archived payment',
     'archived_payments' => 'Successfully archived :count payments',
     'deleted_payment' => 'Successfully deleted payment',
@@ -973,8 +976,7 @@ return array(
     'custom_account_fields_helps' => 'Add a label and value to the company details section of the PDF.',
     'custom_invoice_fields_helps' => 'Add a text input to the invoice create/edit page and display the label and value on the PDF.',
     'custom_invoice_charges_helps' => 'Add a text input to the invoice create/edit page and include the charge in the invoice subtotals.',
-    'color_help' => 'Note: the primary color is also used in the client portal and custom email designs.',
-
+    
     'token_expired' => 'Validation token was expired. Please try again.',
     'invoice_link' => 'Invoice Link',
     'button_confirmation_message' => 'Click to confirm your email address.',
@@ -991,5 +993,49 @@ return array(
     'schedule' => 'Schedule',
     'email_designs' => 'Email Designs',
     'assigned_when_sent' => 'Assigned when sent',
+
+    'white_label_custom_css' => ':link for $'.WHITE_LABEL_PRICE.' to enable custom styling and help support our project.',
+    'white_label_purchase_link' => 'Purchase a white label license',
+    
+    // recurring due dates
+    'recurring_due_dates' => 'Recurring Invoice Due Dates',
+    'recurring_due_date_help' => '<p>Automatically sets a due date for the invoice.</p>
+        <p>Invoices on a monthly or yearly cycle set to be due on or before the day they are created will be due the next month. Invoices set to be due on the 29th or 30th in months that don\'t have that day will be due the last day of the month.</p>
+        <p>Invoices on a weekly cycle set to be due on the day of the week they are created will be due the next week.</p>
+        <p>For example:</p>
+        <ul>
+          <li>Today is the 15th, due date is 1st of the month. The due date should likely be the 1st of the next month.</li>
+          <li>Today is the 15th, due date is the last day of the month. The due date will be the last day of the this month.
+</li>
+          <li>Today is the 15th, due date is the 15th day of the month. The due date will be the 15th day of <strong>next</strong> month.
+</li>
+          <li>Today is the Friday, due date is the 1st Friday after. The due date will be next Friday, not today.
+</li>
+        </ul>',
+    'due' => 'Due',
+    'next_due_on' => 'Due Next: :date',
+    'use_client_terms' => 'Use client terms',
+    'day_of_month' => ':ordinal day of month',
+    'last_day_of_month' => 'Last day of month',
+    'day_of_week_after' => ':ordinal :day after',
+    'sunday' => 'Sunday',
+    'monday' => 'Monday',
+    'tuesday' => 'Tuesday',
+    'wednesday' => 'Wednesday',
+    'thursday' => 'Thursday',
+    'friday' => 'Friday',
+    'saturday' => 'Saturday',
+
+    // Fonts
+    'header_font_id' => 'Header Font',
+    'body_font_id' => 'Body Font',
+    'color_font_help' => 'Note: the primary color and fonts are also used in the client portal and custom email designs.',
+
+    'live_preview' => 'Live Preview',
+    'invalid_mail_config' => 'Unable to send email, please check that the mail settings are correct.',
+
+    'invoice_message_button' => 'To view your invoice for :amount, click the button below.',
+    'quote_message_button' => 'To view your quote for :amount, click the button below.',
+    'payment_message_button' => 'Thank you for your payment of :amount.',
     
 );

@@ -37,8 +37,10 @@ class PublicClientController extends BaseController
             'account' => $account,
             'client' => $client,
             'hideLogo' => $account->isWhiteLabel(),
+            'clientViewCSS' => $account->clientViewCSS(),
+            'clientFontUrl' => $account->getFontsUrl(),
         ];
-
+        
         return response()->view('invited.dashboard', $data);
     }
 
@@ -54,7 +56,7 @@ class PublicClientController extends BaseController
 
         return Datatable::query($query)
             ->addColumn('activities.id', function ($model) { return Utils::timestampToDateTimeString(strtotime($model->created_at)); })
-            ->addColumn('message', function ($model) {
+            ->addColumn('activity_type_id', function ($model) {
                 $data = [
                     'client' => Utils::getClientDisplayName($model),
                     'user' => $model->is_system ? ('<i>' . trans('texts.system') . '</i>') : ($model->user_first_name . ' ' . $model->user_last_name), 
@@ -81,6 +83,8 @@ class PublicClientController extends BaseController
         $data = [
             'color' => $color,
             'hideLogo' => $account->isWhiteLabel(),
+            'clientViewCSS' => $account->clientViewCSS(),
+            'clientFontUrl' => $account->getFontsUrl(),
             'title' => trans('texts.invoices'),
             'entityType' => ENTITY_INVOICE,
             'columns' => Utils::trans(['invoice_number', 'invoice_date', 'invoice_total', 'balance_due', 'due_date']),
@@ -110,6 +114,8 @@ class PublicClientController extends BaseController
         $data = [
             'color' => $color,
             'hideLogo' => $account->isWhiteLabel(),
+            'clientViewCSS' => $account->clientViewCSS(),
+            'clientFontUrl' => $account->getFontsUrl(),
             'entityType' => ENTITY_PAYMENT,
             'title' => trans('texts.payments'),
             'columns' => Utils::trans(['invoice', 'transaction_reference', 'method', 'payment_amount', 'payment_date'])
@@ -145,6 +151,8 @@ class PublicClientController extends BaseController
         $data = [
           'color' => $color,
           'hideLogo' => $account->isWhiteLabel(),
+          'clientViewCSS' => $account->clientViewCSS(),
+          'clientFontUrl' => $account->getFontsUrl(),
           'title' => trans('texts.quotes'),
           'entityType' => ENTITY_QUOTE,
           'columns' => Utils::trans(['quote_number', 'quote_date', 'quote_total', 'due_date']),
@@ -168,6 +176,8 @@ class PublicClientController extends BaseController
         return response()->view('error', [
             'error' => trans('texts.invoice_not_found'),
             'hideHeader' => true,
+            'clientViewCSS' => $account->clientViewCSS(),
+            'clientFontUrl' => $account->getFontsUrl(),
         ]);
     }
 

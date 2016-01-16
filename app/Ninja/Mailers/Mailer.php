@@ -9,6 +9,12 @@ class Mailer
 {
     public function sendTo($toEmail, $fromEmail, $fromName, $subject, $view, $data = [])
     {
+        // check the username is set
+        if ( ! env('POSTMARK_API_TOKEN') && ! env('MAIL_USERNAME')) {
+            return trans('texts.invalid_mail_config');
+        }
+
+        // don't send emails to dummy addresses
         if (stristr($toEmail, '@example.com')) {
             return true;
         }
@@ -55,8 +61,8 @@ class Mailer
 
             // Track the Postmark message id
             if (isset($_ENV['POSTMARK_API_TOKEN']) && $response) {
-                $json = $response->json();
-                $messageId = $json['MessageID'];
+                $json = json_decode((string) $response->getBody());
+                $messageId = $json->MessageID;
             }
 
             $invoice->markInvitationSent($invitation, $messageId);

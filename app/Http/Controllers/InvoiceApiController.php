@@ -1,6 +1,7 @@
 <?php namespace App\Http\Controllers;
 
 use Auth;
+use Illuminate\Support\Facades\Request;
 use Utils;
 use Response;
 use Input;
@@ -15,6 +16,8 @@ use App\Ninja\Repositories\InvoiceRepository;
 use App\Ninja\Mailers\ContactMailer as Mailer;
 use App\Http\Controllers\BaseAPIController;
 use App\Ninja\Transformers\InvoiceTransformer;
+use App\Http\Requests\CreateInvoiceRequest;
+use App\Http\Requests\UpdateInvoiceRequest;
 
 class InvoiceApiController extends BaseAPIController
 {
@@ -47,11 +50,9 @@ class InvoiceApiController extends BaseAPIController
      */
     public function index()
     {
-        $paginator = Invoice::scope();
-        $invoices = Invoice::scope()
-                        ->with(array_merge(['invoice_items'], $this->getIncluded()))
-                        ->where('invoices.is_quote', '=', false)
-                        ->where('invoices.is_recurring', '=', false);
+        $paginator = Invoice::scope()->withTrashed();
+        $invoices = Invoice::scope()->withTrashed()
+                        ->with(array_merge(['invoice_items'], $this->getIncluded()));
 
         if ($clientPublicId = Input::get('client_id')) {
             $filter = function($query) use ($clientPublicId) {
@@ -103,14 +104,10 @@ class InvoiceApiController extends BaseAPIController
      *   )
      * )
      */
-    public function store()
+    public function store(CreateInvoiceRequest $request)
     {
         $data = Input::all();
         $error = null;
-
-        if (isset($data['id']) || isset($data['public_id'])) {
-            die("We don't yet support updating invoices");
-        }
 
         if (isset($data['email'])) {
             $email = $data['email'];
@@ -140,52 +137,30 @@ class InvoiceApiController extends BaseAPIController
                 $client = $this->clientRepo->save($clientData);
             }
         } else if (isset($data['client_id'])) {
-            $client = Client::scope($data['client_id'])->first();
+            $client = Client::scope($data['client_id'])->firstOrFail();
         }
 
-        // check if the invoice number is set and unique
-        if (!isset($data['invoice_number']) && !isset($data['id'])) {
-            // do nothing... invoice number will be set automatically
-        } else if (isset($data['invoice_number'])) {
-            $invoice = Invoice::scope()->where('invoice_number', '=', $data['invoice_number'])->first();
-            if ($invoice) {
-                $error = trans('validation.unique', ['attribute' => 'texts.invoice_number']);
-            }
+        $data = self::prepareData($data, $client);
+        $data['client_id'] = $client->id;
+        $invoice = $this->invoiceRepo->save($data);
+
+        if (!isset($data['id'])) {
+            $invitation = Invitation::createNew();
+            $invitation->invoice_id = $invoice->id;
+            $invitation->contact_id = $client->contacts[0]->id;
+            $invitation->invitation_key = str_random(RANDOM_KEY_LENGTH);
+            $invitation->save();
         }
 
-        if (!$error) {
-            if (!isset($data['client_id']) && !isset($data['email'])) {
-                $error = trans('validation.required_without', ['attribute' => 'client_id', 'values' => 'email']);
-            } else if (!$client) {
-                $error = trans('validation.not_in', ['attribute' => 'client_id']);
-            }
+        if (isset($data['email_invoice']) && $data['email_invoice']) {
+            $this->mailer->sendInvoice($invoice);
         }
 
-        if ($error) {
-            return $error;
-        } else {
-            $data = self::prepareData($data, $client);
-            $data['client_id'] = $client->id;
-            $invoice = $this->invoiceRepo->save($data);
+        $invoice = Invoice::scope($invoice->public_id)->with('client', 'invoice_items', 'invitations')->first();
+        $transformer = new InvoiceTransformer(\Auth::user()->account, Input::get('serializer'));
+        $data = $this->createItem($invoice, $transformer, 'invoice');
 
-            if (!isset($data['id'])) {
-                $invitation = Invitation::createNew();
-                $invitation->invoice_id = $invoice->id;
-                $invitation->contact_id = $client->contacts[0]->id;
-                $invitation->invitation_key = str_random(RANDOM_KEY_LENGTH);
-                $invitation->save();
-            }
-
-            if (isset($data['email_invoice']) && $data['email_invoice']) {
-                $this->mailer->sendInvoice($invoice);
-            }
-
-            $invoice = Invoice::scope($invoice->public_id)->with('client', 'invoice_items', 'invitations')->first();
-            $transformer = new InvoiceTransformer(\Auth::user()->account, Input::get('serializer'));
-            $data = $this->createItem($invoice, $transformer, 'invoice');
-
-            return $this->response($data);
-        }
+        return $this->response($data);
     }
 
     private function prepareData($data, $client)
@@ -221,15 +196,6 @@ class InvoiceApiController extends BaseAPIController
             if (!isset($data[$key])) {
                 $data[$key] = $val;
             }
-        }
-
-        // hardcode some fields
-        $fields = [
-            'is_recurring' => false
-        ];
-
-        foreach ($fields as $key => $val) {
-            $data[$key] = $val;
         }
 
         // initialize the line items
@@ -304,4 +270,89 @@ class InvoiceApiController extends BaseAPIController
         $headers = Utils::getApiHeaders();
         return Response::make($response, $error ? 400 : 200, $headers);
     }
+
+        /**
+         * @SWG\Put(
+         *   path="/invoices",
+         *   tags={"invoice"},
+         *   summary="Update an invoice",
+         *   @SWG\Parameter(
+         *     in="body",
+         *     name="body",
+         *     @SWG\Schema(ref="#/definitions/Invoice")
+         *   ),
+         *   @SWG\Response(
+         *     response=200,
+         *     description="Update invoice",
+         *      @SWG\Schema(type="object", @SWG\Items(ref="#/definitions/Invoice"))
+         *   ),
+         *   @SWG\Response(
+         *     response="default",
+         *     description="an ""unexpected"" error"
+         *   )
+         * )
+         */
+    public function update(UpdateInvoiceRequest $request, $publicId)
+    {
+        if ($request->action == ACTION_ARCHIVE) {
+            $invoice = Invoice::scope($publicId)->firstOrFail();
+            $this->invoiceRepo->archive($invoice);
+            /*
+            $response = json_encode(RESULT_SUCCESS, JSON_PRETTY_PRINT);
+            $headers = Utils::getApiHeaders();
+            return Response::make($response, 200, $headers);
+            */
+            $transformer = new InvoiceTransformer(\Auth::user()->account, Input::get('serializer'));
+            $data = $this->createItem($invoice, $transformer, 'invoice');
+
+            return $this->response($data);
+        }
+
+        $data = $request->input();
+        $data['public_id'] = $publicId;
+        $this->invoiceRepo->save($data);
+
+        $invoice = Invoice::scope($publicId)->with('client', 'invoice_items', 'invitations')->firstOrFail();
+        $transformer = new InvoiceTransformer(\Auth::user()->account, Input::get('serializer'));
+        $data = $this->createItem($invoice, $transformer, 'invoice');
+
+        return $this->response($data);
+    }
+
+        /**
+         * @SWG\Delete(
+         *   path="/invoices",
+         *   tags={"invoice"},
+         *   summary="Delete an invoice",
+         *   @SWG\Parameter(
+         *     in="body",
+         *     name="body",
+         *     @SWG\Schema(ref="#/definitions/Invoice")
+         *   ),
+         *   @SWG\Response(
+         *     response=200,
+         *     description="Delete invoice",
+         *      @SWG\Schema(type="object", @SWG\Items(ref="#/definitions/Invoice"))
+         *   ),
+         *   @SWG\Response(
+         *     response="default",
+         *     description="an ""unexpected"" error"
+         *   )
+         * )
+         */
+
+    public function destroy($publicId)
+    {
+        $data['public_id'] = $publicId;
+        $invoice = Invoice::scope($publicId)->firstOrFail();
+
+        $this->invoiceRepo->delete($invoice);
+
+        $transformer = new InvoiceTransformer(\Auth::user()->account, Input::get('serializer'));
+        $data = $this->createItem($invoice, $transformer, 'invoice');
+
+        return $this->response($data);
+
+    }
+
 }

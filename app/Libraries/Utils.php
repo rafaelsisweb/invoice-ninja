@@ -214,6 +214,7 @@ class Utils
             'user_id' => Auth::check() ? Auth::user()->id : 0,
             'account_id' => Auth::check() ? Auth::user()->account_id : 0,
             'user_name' => Auth::check() ? Auth::user()->getDisplayName() : '',
+            'method' => Request::method(),
             'url' => Input::get('url', Request::url()),
             'user_agent' => isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '',
             'ip' => Request::getClientIp(),
@@ -376,7 +377,10 @@ class Utils
         $format = Session::get(SESSION_DATE_FORMAT, DEFAULT_DATE_FORMAT);
         $dateTime = DateTime::createFromFormat($format, $date);
 
-        return $formatResult ? $dateTime->format('Y-m-d') : $dateTime;
+        if(!$dateTime)
+            return $date;
+        else
+            return $formatResult ? $dateTime->format('Y-m-d') : $dateTime;
     }
 
     public static function fromSqlDate($date, $formatResult = true)
