@@ -46,6 +46,11 @@ class Utils
         return file_exists(storage_path() . '/framework/down');
     }
 
+    public static function isCron()
+    {
+        return php_sapi_name() == 'cli';
+    }
+
     public static function isNinja()
     {
         return self::isNinjaProd() || self::isNinjaDev();
@@ -270,6 +275,7 @@ class Utils
         $currency = self::getFromCache($currencyId, 'currencies');
         $thousand = $currency->thousand_separator;
         $decimal = $currency->decimal_separator;
+        $code = $currency->code;
         $swapSymbol = false;
 
         if ($countryId && $currencyId == CURRENCY_EURO) {
@@ -288,6 +294,8 @@ class Utils
 
         if ($hideSymbol) {
             return $value;
+        } elseif (!$symbol) {
+            return "{$value} {$code}";
         } elseif ($swapSymbol) {
             return "{$value} " . trim($symbol);
         } else {

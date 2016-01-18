@@ -90,7 +90,7 @@
 							<input type="checkbox" value="1" data-bind="checked: send_invoice, attr: {id: $index() + '_check', name: 'client[contacts][' + $index() + '][send_invoice]'}">
 							<span data-bind="html: email.display"></span> 
                         </label>
-                        <span data-bind="html: $data.view_as_recipient"></span>&nbsp;&nbsp;
+                        <span data-bind="html: $data.view_as_recipient, visible: !$root.invoice().is_recurring()"></span>&nbsp;&nbsp;
                         @if (Utils::isConfirmed())
                         <span style="vertical-align:text-top;color:red" class="fa fa-exclamation-triangle" 
                                 data-bind="visible: $data.email_error, tooltip: {title: $data.email_error}"></span>
@@ -329,7 +329,7 @@
 					<td>{{ trans('texts.tax') }}</td>
 				@endif
 				<td style="min-width:120px">
-                    <select class="form-control" style="width:100%" data-bind="value: tax, options: $root.tax_rates, optionsText: 'displayName'"></select>
+                    <select id="taxRateSelect" class="form-control" style="width:100%" data-bind="value: tax, options: $root.tax_rates, optionsText: 'displayName'"></select>
                     <input type="text" name="tax_name" data-bind="value: tax().name" style="display:none">
                     <input type="text" name="tax_rate" data-bind="value: tax().rate" style="display:none">
                 </td>
@@ -935,7 +935,7 @@
             }
         @endif
 
-		@if (file_exists($account->getLogoPath()))
+		@if ($account->hasLogo())
 			invoice.image = "{{ HTML::image_data($account->getLogoPath()) }}";
 			invoice.imageWidth = {{ $account->getLogoWidth() }};
 			invoice.imageHeight = {{ $account->getLogoHeight() }};
