@@ -44,7 +44,7 @@ return array(
   'line_total' => 'Total',
   'subtotal' => 'Subtotal',
   'paid_to_date' => 'Pago',
-  'balance_due' => 'Valor',
+  'balance_due' => 'Saldo',
   'invoice_design_id' => 'Modelo',
   'terms' => 'Condições',
   'your_invoice' => 'Seu Pedido',
