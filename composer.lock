@@ -539,11 +539,7 @@
             },
             "dist": {
                 "type": "zip",
-<<<<<<< HEAD
-                "url": "https://api.github.com/repos/Chumper/Datatable/zipball/b44834db3d4e560d4368c1a04248b9e6a422ccff",
-=======
                 "url": "https://api.github.com/repos/Chumper/Datatable/zipball/546e8768d7987b0d9a8501e67432309349ef5504",
->>>>>>> master
                 "reference": "7fa47cb",
                 "shasum": ""
             },
@@ -584,12 +580,8 @@
                 "jquery",
                 "laravel"
             ],
-<<<<<<< HEAD
-            "time": "2015-10-26 01:21:31"
-=======
             "abandoned": "OpenSkill/Datatable",
             "time": "2015-11-23 21:33:41"
->>>>>>> master
         },
         {
             "name": "classpreloader/classpreloader",
