@@ -20,6 +20,7 @@ use App\Models\Account;
 use App\Models\Gateway;
 use App\Models\InvoiceDesign;
 use App\Models\TaxRate;
+use App\Models\PaymentTerm;
 use App\Ninja\Repositories\AccountRepository;
 use App\Ninja\Repositories\ReferralRepository;
 use App\Ninja\Mailers\UserMailer;
@@ -144,6 +145,8 @@ class AccountController extends BaseController
             return self::showLocalization();
         } elseif ($section == ACCOUNT_PAYMENTS) {
             return self::showOnlinePayments();
+        } elseif ($section == ACCOUNT_BANKS) {
+            return self::showBankAccounts();
         } elseif ($section == ACCOUNT_INVOICE_SETTINGS) {
             return self::showInvoiceSettings();
         } elseif ($section == ACCOUNT_IMPORT_EXPORT) {
@@ -158,6 +161,8 @@ class AccountController extends BaseController
             return self::showProducts();
         } elseif ($section === ACCOUNT_TAX_RATES) {
             return self::showTaxRates();
+        } elseif ($section === ACCOUNT_PAYMENT_TERMS) {
+            return self::showPaymentTerms();
         } elseif ($section === ACCOUNT_SYSTEM_SETTINGS) {
             return self::showSystemSettings();
         } else {
@@ -263,6 +268,21 @@ class AccountController extends BaseController
         return View::make('accounts.localization', $data);
     }
 
+    private function showBankAccounts()
+    {
+        $account = Auth::user()->account;
+        $account->load('bank_accounts');
+        $count = count($account->bank_accounts);
+
+        if ($count == 0) {
+            return Redirect::to('bank_accounts/create');
+        } else {
+            return View::make('accounts.banks', [
+                'title' => trans('texts.bank_accounts')
+            ]);
+        }
+    }
+
     private function showOnlinePayments()
     {
         $account = Auth::user()->account;
@@ -313,6 +333,17 @@ class AccountController extends BaseController
         return View::make('accounts.tax_rates', $data);
     }
 
+    private function showPaymentTerms()
+    {
+        $data = [
+            'account' => Auth::user()->account,
+            'title' => trans('texts.payment_terms'),
+            'taxRates' => PaymentTerm::scope()->get(['id', 'name', 'num_days']),
+        ];
+
+        return View::make('accounts.payment_terms', $data);
+    }
+
     private function showInvoiceDesign($section)
     {
         $account = Auth::user()->account->load('country');
@@ -322,13 +353,13 @@ class AccountController extends BaseController
         $invoiceItem = new stdClass();
 
         $client->name = 'Sample Client';
-        $client->address1 = '';
-        $client->city = '';
-        $client->state = '';
-        $client->postal_code = '';
-        $client->work_phone = '';
-        $client->work_email = '';
-
+        $client->address1 = trans('texts.address1');
+        $client->city = trans('texts.city');
+        $client->state = trans('texts.state');
+        $client->postal_code = trans('texts.postal_code');
+        $client->work_phone = trans('texts.work_phone');
+        $client->work_email = trans('texts.work_id');
+        
         $invoice->invoice_number = '0000';
         $invoice->invoice_date = Utils::fromSqlDate(date('Y-m-d'));
         $invoice->account = json_decode($account->toJson());
@@ -347,7 +378,7 @@ class AccountController extends BaseController
 
         $invoice->client = $client;
         $invoice->invoice_items = [$invoiceItem];
-        
+
         $data['account'] = $account;
         $data['invoice'] = $invoice;
         $data['invoiceLabels'] = json_decode($account->invoice_labels) ?: [];
@@ -355,7 +386,7 @@ class AccountController extends BaseController
         $data['invoiceDesigns'] = InvoiceDesign::getDesigns();
         $data['invoiceFonts'] = Cache::get('fonts');
         $data['section'] = $section;
-        
+
         $design = false;
         foreach ($data['invoiceDesigns'] as $item) {
             if ($item->id == $account->invoice_design_id) {
@@ -444,6 +475,8 @@ class AccountController extends BaseController
             return AccountController::saveProducts();
         } elseif ($section === ACCOUNT_TAX_RATES) {
             return AccountController::saveTaxRates();
+        } elseif ($section === ACCOUNT_PAYMENT_TERMS) {
+            return AccountController::savePaymetTerms();
         }
     }
 
@@ -645,6 +678,7 @@ class AccountController extends BaseController
                 $account->invoice_terms = Input::get('invoice_terms');
                 $account->invoice_footer = Input::get('invoice_footer');
                 $account->quote_terms = Input::get('quote_terms');
+                $account->auto_convert_quote = Input::get('auto_convert_quote');
 
                 if (Input::has('recurring_hour')) {
                     $account->recurring_hour = Input::get('recurring_hour');
@@ -695,7 +729,7 @@ class AccountController extends BaseController
             $account->primary_color = Input::get('primary_color');
             $account->secondary_color = Input::get('secondary_color');
             $account->invoice_design_id = Input::get('invoice_design_id');
-            
+
             if (Input::has('font_size')) {
                 $account->font_size =  intval(Input::get('font_size'));
             }

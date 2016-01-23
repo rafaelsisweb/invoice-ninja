@@ -319,6 +319,7 @@ class InvoiceController extends BaseController
             'recurringDueDateHelp' => $recurringDueDateHelp,
             'invoiceLabels' => Auth::user()->account->getInvoiceLabels(),
             'tasks' => Session::get('tasks') ? json_encode(Session::get('tasks')) : null,
+            'expenses' => Session::get('expenses') ? json_encode(Session::get('expenses')) : null,
         ];
 
     }
@@ -475,7 +476,7 @@ class InvoiceController extends BaseController
     public function convertQuote($publicId)
     {
         $invoice = Invoice::with('invoice_items')->scope($publicId)->firstOrFail();
-        $clone = $this->invoiceService->approveQuote($invoice);
+        $clone = $this->invoiceService->convertQuote($invoice);
 
         Session::flash('message', trans('texts.converted_to_invoice'));
         return Redirect::to('invoices/'.$clone->public_id);
