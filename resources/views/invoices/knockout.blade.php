@@ -6,6 +6,7 @@ function ViewModel(data) {
 
     //self.invoice = data ? false : new InvoiceModel();
     self.invoice = ko.observable(data ? false : new InvoiceModel());
+    self.expense_currency_id = ko.observable();
     self.tax_rates = ko.observableArray();
     self.tax_rates.push(new TaxRateModel());  // add blank row
 
@@ -484,10 +485,8 @@ function InvoiceModel(data) {
         }
 
         var taxRate = parseFloat(self.tax_rate());
-        //if (taxRate > 0) {
-        //    total = NINJA.parseFloat(total) + roundToTwo((total * (taxRate/100)));
-        //}
-        total = NINJA.parseFloat(total) + roundToTwo((total * (taxRate/100)));
+        total = NINJA.parseFloat(total) + roundToTwo(total * (taxRate/100));
+        total = roundToTwo(total);
 
         var taxes = self.totals.itemTaxes();
         for (var key in taxes) {

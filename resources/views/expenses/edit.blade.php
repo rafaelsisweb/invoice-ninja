@@ -174,24 +174,25 @@
         var ViewModel = function(data) {
             var self = this;
 
-            self.client_id = ko.observable({{ $clientPublicId }});
-            self.vendor_id = ko.observable({{ $vendorPublicId }});
             self.currency_id = ko.observable();
             self.amount = ko.observable();
             self.exchange_rate = ko.observable(1);
             self.should_be_invoiced = ko.observable();
-            self.account_currency_id = ko.observable({{ $account->getCurrencyId() }});
 
             if (data) {
                 ko.mapping.fromJS(data, {}, this);
             }
+
+            self.account_currency_id = ko.observable({{ $account->getCurrencyId() }});
+            self.client_id = ko.observable({{ $clientPublicId }});
+            self.vendor_id = ko.observable({{ $vendorPublicId }});
 
             self.convertedAmount = ko.computed({
                 read: function () {
                     return roundToTwo(self.amount() * self.exchange_rate()).toFixed(2);
                 },
                 write: function(value) {
-                    self.exchange_rate(roundToFour(value / self.amount()));
+                    self.amount(roundToTwo(value / self.exchange_rate()));
                 }
             }, self);
 
@@ -204,7 +205,6 @@
             self.currencyName = ko.computed(function() {
                 var currencyId = self.currency_id() || self.account_currency_id();
                 var currency = currencyMap[currencyId];
-                console.log(currencyId);
                 return currency.name;
             });
 

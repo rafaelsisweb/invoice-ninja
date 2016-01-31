@@ -5,7 +5,8 @@ use Utils;
 use URL;
 use App\Services\BaseService;
 use App\Ninja\Repositories\ExpenseRepository;
-
+use App\Models\Client;
+use App\Models\Vendor;
 
 class ExpenseService extends BaseService
 {
@@ -26,6 +27,14 @@ class ExpenseService extends BaseService
 
     public function save($data)
     {
+        if (isset($data['client_id']) && $data['client_id']) {
+            $data['client_id'] = Client::getPrivateId($data['client_id']);
+        }
+        
+        if (isset($data['vendor_id']) && $data['vendor_id']) {
+            $data['vendor_id'] = Vendor::getPrivateId($data['vendor_id']);
+        }
+        
         return $this->expenseRepo->save($data);
     }
 
@@ -81,11 +90,13 @@ class ExpenseService extends BaseService
                 'amount',
                 function ($model) {
                     // show both the amount and the converted amount
-                    $str = Utils::formatMoney($model->amount, $model->account_currency_id, $model->account_country_id);
                     if ($model->exchange_rate != 1) {
-                        $str .= ' | ' . Utils::formatMoney(round($model->amount * $model->exchange_rate,2), $model->currency_id, $model->client_country_id);
+                        $converted = round($model->amount * $model->exchange_rate, 2);
+                        return Utils::formatMoney($model->amount, $model->account_currency_id, $model->account_country_id) . ' | ' . 
+                            Utils::formatMoney($converted, $model->currency_id, $model->client_country_id);
+                    } else {
+                        return Utils::formatMoney($model->amount, $model->currency_id, $model->account_country_id);
                     }
-                    return $str;
                 }
             ],
             [
@@ -109,7 +120,7 @@ class ExpenseService extends BaseService
             [
                 'expense_date',
                 function ($model) {
-                    return $model->expense_date;
+                    return Utils::dateToString($model->expense_date);
                 }
             ],
             [

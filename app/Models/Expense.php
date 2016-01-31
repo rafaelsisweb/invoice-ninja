@@ -24,6 +24,8 @@ class Expense extends EntityModel
         'exchange_rate',
         'private_notes',
         'public_notes',
+        'bank_id',
+        'transaction_id',
     ];
     public function account()
     {
@@ -56,6 +58,11 @@ class Expense extends EntityModel
             return $this->expense_number;
 
         return $this->public_id;
+    }
+
+    public function getCurrencyId()
+    {
+        return $this->client ? $this->client->currency_id : $this->currency_id;
     }
 
     public function getDisplayName()

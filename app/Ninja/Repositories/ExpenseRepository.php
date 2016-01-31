@@ -26,11 +26,12 @@ class ExpenseRepository extends BaseRepository
 
     public function findVendor($vendorPublicId)
     {
+        $vendorId = Vendor::getPrivateId($vendorPublicId);
         $accountid = \Auth::user()->account_id;
         $query = DB::table('expenses')
                     ->join('accounts', 'accounts.id', '=', 'expenses.account_id')
                     ->where('expenses.account_id', '=', $accountid)
-                    ->where('expenses.vendor_id', '=', $vendorPublicId)
+                    ->where('expenses.vendor_id', '=', $vendorId)
                     ->select(
                         'expenses.id',
                         'expenses.expense_date',
@@ -60,12 +61,12 @@ class ExpenseRepository extends BaseRepository
                     ->where('clients.deleted_at', '=', null)
                     ->where(function ($query) {
                         $query->where('contacts.is_primary', '=', true)
-                                ->orWhere('contacts.is_primary', '=', null);
+                              ->orWhere('contacts.is_primary', '=', null);
                     })
                     ->select(
+                        DB::raw('COALESCE(clients.currency_id, expenses.currency_id, accounts.currency_id) currency_id'),
                         'expenses.account_id',
                         'expenses.amount',
-                        'expenses.currency_id',
                         'expenses.deleted_at',
                         'expenses.exchange_rate',
                         'expenses.expense_date',
@@ -98,7 +99,9 @@ class ExpenseRepository extends BaseRepository
 
         if ($filter) {
             $query->where(function ($query) use ($filter) {
-                $query->where('expenses.public_notes', 'like', '%'.$filter.'%');
+                $query->where('expenses.public_notes', 'like', '%'.$filter.'%')
+                      ->orWhere('clients.name', 'like', '%'.$filter.'%')
+                      ->orWhere('vendors.name', 'like', '%'.$filter.'%');
             });
         }
 
@@ -119,7 +122,10 @@ class ExpenseRepository extends BaseRepository
         $expense->fill($input);
 
         $expense->expense_date = Utils::toSqlDate($input['expense_date']);
-        $expense->private_notes = trim($input['private_notes']);
+
+        if (isset($input['private_notes'])) {
+            $expense->private_notes = trim($input['private_notes']);
+        }
         $expense->public_notes = trim($input['public_notes']);
         $expense->should_be_invoiced = isset($input['should_be_invoiced']) || $expense->client_id ? true : false;
 
