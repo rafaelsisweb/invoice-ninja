@@ -378,8 +378,8 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a href="{{ URL::to(NINJA_WEB_URL) }}" class='navbar-brand' target="_blank">
-        <img src="{{ asset('images/invoiceninja-logo.png') }}" style="height:20px;width:auto;padding-right:10px"/>
+      <a href="/" class='navbar-brand' target="_blank">
+        <!--- img src="{{ asset('images/invoiceninja-logo.png') }}" style="height:20px;width:auto;padding-right:10px"/-->
       </a>	    
     </div>
 
@@ -718,62 +718,4 @@
 
 </div>
 <br/>
-<div class="container">
-@if (Utils::isNinjaProd())
-  @if (Auth::check() && Auth::user()->isTrial())
-    {!! trans(Auth::user()->account->getCountTrialDaysLeft() == 0 ? 'texts.trial_footer_last_day' : 'texts.trial_footer', [
-            'count' => Auth::user()->account->getCountTrialDaysLeft(), 
-            'link' => '<a href="javascript:submitProPlan()">' . trans('texts.click_here') . '</a>'
-        ]) !!}
-  @endif
-@else
-  {{ trans('texts.powered_by') }}
-  {{-- Per our license, please do not remove or modify this section. --}}
-  {!! link_to('https://www.invoiceninja.com/?utm_source=powered_by', 'InvoiceNinja.com', ['target' => '_blank', 'title' => 'invoiceninja.com']) !!} -
-  {!! link_to(RELEASES_URL, 'v' . NINJA_VERSION, ['target' => '_blank', 'title' => trans('texts.trello_roadmap')]) !!} | 
-  @if (Auth::user()->account->isWhiteLabel())  
-    {{ trans('texts.white_labeled') }}
-  @else
-    <a href="#" onclick="$('#whiteLabelModal').modal('show');">{{ trans('texts.white_label_link') }}</a>
-
-    <div class="modal fade" id="whiteLabelModal" tabindex="-1" role="dialog" aria-labelledby="whiteLabelModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-            <h4 class="modal-title" id="myModalLabel">{{ trans('texts.white_label_header') }}</h4>
-          </div>
-
-          <div class="panel-body">
-            <p>{{ trans('texts.white_label_text')}}</p>
-            <div class="row">
-                <div class="col-md-6">
-                    <h4>{{ trans('texts.before') }}</h4>
-                    {!! HTML::image('images/pro_plan/white_label_before.png', 'before', ['width' => '100%']) !!}
-                </div>
-                <div class="col-md-6">
-                    <h4>{{ trans('texts.after') }}</h4>
-                    {!! HTML::image('images/pro_plan/white_label_after.png', 'after', ['width' => '100%']) !!}
-                </div>
-            </div>
-          </div>
-
-          <div class="modal-footer" id="signUpFooter" style="margin-top: 0px">          
-            <button type="button" class="btn btn-default" data-dismiss="modal">{{ trans('texts.close') }} </button>
-            {{-- DropdownButton::success_lg(trans('texts.buy'), [
-                ['url' => URL::to(""), 'label' => trans('texts.pay_with_paypal')],
-                ['url' => URL::to(""), 'label' => trans('texts.pay_with_card')]
-            ])->addClass('btn-lg') --}}
-            <button type="button" class="btn btn-primary" onclick="buyProduct('{{ WHITE_LABEL_AFFILIATE_KEY }}', '{{ PRODUCT_WHITE_LABEL }}')">{{ trans('texts.buy') }} </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  @endif
-</div>
-@endif
-
-<p>&nbsp;</p>
-
-
 @stop
