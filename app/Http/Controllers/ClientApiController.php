@@ -1,5 +1,6 @@
 <?php namespace App\Http\Controllers;
 
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Utils;
 use Response;
 use Input;
@@ -51,8 +52,8 @@ class ClientApiController extends BaseAPIController
     public function index()
     {
         $clients = Client::scope()
-                    ->with($this->getIncluded())
-                    ->orderBy('created_at', 'desc')->withTrashed();
+            ->with($this->getIncluded())
+            ->orderBy('created_at', 'desc')->withTrashed();
 
         // Filter by email
         if (Input::has('email')) {
@@ -67,7 +68,7 @@ class ClientApiController extends BaseAPIController
         $clients = $clients->paginate();
 
         $transformer = new ClientTransformer(Auth::user()->account, Input::get('serializer'));
-        $paginator = Client::scope()->paginate();
+        $paginator = Client::scope()->withTrashed()->paginate();
 
         $data = $this->createCollection($clients, $transformer, ENTITY_CLIENT, $paginator);
 
@@ -100,8 +101,8 @@ class ClientApiController extends BaseAPIController
         $client = $this->clientRepo->save($request->input());
 
         $client = Client::scope($client->public_id)
-                    ->with('country', 'contacts', 'industry', 'size', 'currency')
-                    ->first();
+            ->with('country', 'contacts', 'industry', 'size', 'currency')
+            ->first();
 
         $transformer = new ClientTransformer(Auth::user()->account, Input::get('serializer'));
         $data = $this->createItem($client, $transformer, ENTITY_CLIENT);
@@ -134,8 +135,28 @@ class ClientApiController extends BaseAPIController
     public function update(UpdateClientRequest $request, $publicId)
     {
         if ($request->action == ACTION_ARCHIVE) {
-            $client = Client::scope($publicId)->firstOrFail();
+
+
+            $client = Client::scope($publicId)->withTrashed()->first();
+
+            if(!$client)
+                return $this->errorResponse(['message'=>'Record not found'], 400);
+
             $this->clientRepo->archive($client);
+
+            $transformer = new ClientTransformer(Auth::user()->account, Input::get('serializer'));
+            $data = $this->createItem($client, $transformer, ENTITY_CLIENT);
+
+            return $this->response($data);
+        }
+        else if ($request->action == ACTION_RESTORE){
+
+            $client = Client::scope($publicId)->withTrashed()->first();
+
+            if(!$client)
+                return $this->errorResponse(['message'=>'Client not found.'], 400);
+
+            $this->clientRepo->restore($client);
 
             $transformer = new ClientTransformer(Auth::user()->account, Input::get('serializer'));
             $data = $this->createItem($client, $transformer, ENTITY_CLIENT);
@@ -151,9 +172,55 @@ class ClientApiController extends BaseAPIController
             ->with('country', 'contacts', 'industry', 'size', 'currency')
             ->first();
 
+        if(!$client)
+            return $this->errorResponse(['message'=>'Client not found.'],400);
+        
         $transformer = new ClientTransformer(Auth::user()->account, Input::get('serializer'));
         $data = $this->createItem($client, $transformer, ENTITY_CLIENT);
 
         return $this->response($data);
     }
+
+
+    /**
+     * @SWG\Delete(
+     *   path="/clients/{client_id}",
+     *   tags={"client"},
+     *   summary="Delete a client",
+     *   @SWG\Parameter(
+     *     in="body",
+     *     name="body",
+     *     @SWG\Schema(ref="#/definitions/Client")
+     *   ),
+     *   @SWG\Response(
+     *     response=200,
+     *     description="Delete client",
+     *      @SWG\Schema(type="object", @SWG\Items(ref="#/definitions/Client"))
+     *   ),
+     *   @SWG\Response(
+     *     response="default",
+     *     description="an ""unexpected"" error"
+     *   )
+     * )
+     */
+    
+    public function destroy($publicId)
+    {
+
+        $client = Client::scope($publicId)->withTrashed()->first();
+        $this->clientRepo->delete($client);
+
+        $client = Client::scope($publicId)
+            ->with('country', 'contacts', 'industry', 'size', 'currency')
+            ->withTrashed()
+            ->first();
+
+        $transformer = new ClientTransformer(Auth::user()->account, Input::get('serializer'));
+        $data = $this->createItem($client, $transformer, ENTITY_CLIENT);
+
+        return $this->response($data);
+
+    }
+
+
 }

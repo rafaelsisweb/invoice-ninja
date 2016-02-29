@@ -30311,7 +30311,7 @@ if (window.ko) {
 function getContactDisplayName(contact)
 {
     if (contact.first_name || contact.last_name) {
-        return contact.first_name + ' ' + contact.last_name;
+        return (contact.first_name || '') + ' ' + (contact.last_name || '');
     } else {
         return contact.email;
     }
@@ -30967,11 +30967,11 @@ function GetPdfMake(invoice, javascript, callback) {
         if (invoice.is_pro) {
             if (key === 'header') {
                 return function(page, pages) {
-                    return page === 1 || account.all_pages_header ? val : '';
+                    return page === 1 || invoice.account.all_pages_header == '1' ? val : '';
                 }
             } else if (key === 'footer') {
                 return function(page, pages) {
-                    return page === pages || account.all_pages_footer ? val : '';
+                    return page === pages || invoice.account.all_pages_footer == '1' ? val : '';
                 }
             }
         }
@@ -31100,8 +31100,8 @@ NINJA.decodeJavascript = function(invoice, javascript)
             if (match.indexOf('?') < 0 || value) {
                 if (invoice.partial && field == 'balance_due') {
                     field = 'amount_due';
-                } else if (invoice.is_quote && field == 'your_invoice') {
-                    field = 'your_quote';
+                } else if (invoice.is_quote) {
+                    field = field.replace('invoice', 'quote');
                 }
                 var label = invoiceLabels[field];
                 if (match.indexOf('UC') >= 0) {

@@ -4,7 +4,7 @@
     @if (isset($hideLogo) && $hideLogo)
         <title>{{ trans('texts.client_portal') }}</title>
     @else
-        <title>{{ isset($title) ? ($title . ' | Plastivel') : ('Plastivel | ' . trans('texts.app_title')) }}</title> 
+        <title>{{ isset($title) ? ($title . ' | Invoice Ninja') : ('Invoice Ninja | ' . trans('texts.app_title')) }}</title> 
         <meta name="description" content="{{ isset($description) ? $description : trans('texts.app_description') }}" />
         <link href="{{ asset('favicon-v2.png') }}" rel="shortcut icon" type="image/png">
     @endif
@@ -77,12 +77,13 @@
             }
         } );
         
-        /*   
+        /* This causes problems with some languages. ie, fr_CA
+		var appLocale = '{{App::getLocale()}}';
         $.extend( true, $.fn.datepicker.defaults, {
-            language:'{{App::getLocale()}}'
+			language: appLocale.replace("_", "-")
         });
         */
-        
+
         @if (env('FACEBOOK_PIXEL'))
             <!-- Facebook Pixel Code -->
             !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?

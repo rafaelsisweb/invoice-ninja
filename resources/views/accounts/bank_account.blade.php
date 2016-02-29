@@ -23,7 +23,7 @@
 
     <div class="panel panel-default">
     <div class="panel-heading">
-        <h3 class="panel-title" data-bind="text: title"></h3>
+        <h3 class="panel-title" data-bind="text: title">&nbsp;</h3>
     </div>
     <div class="panel-body">
 
@@ -269,6 +269,7 @@
             processData: false,
             contentType: 'application/json; charset=utf-8',
             success: function (result) {
+                NINJA.formIsChanged = false;
                 model.importResults(result);
                 model.setPage('done');
             }

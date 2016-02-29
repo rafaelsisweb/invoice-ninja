@@ -93,7 +93,7 @@ class AppServiceProvider extends ServiceProvider {
                         ->render();
         });
 
-        HTML::macro('breadcrumbs', function() {
+        HTML::macro('breadcrumbs', function($status = false) {
             $str = '<ol class="breadcrumb">';
 
             // Get the breadcrumbs by exploding the current path.
@@ -128,6 +128,11 @@ class AppServiceProvider extends ServiceProvider {
                     $str .= '<li>'.link_to($crumb, $name).'</li>';
                 }
             }
+
+            if ($status) {
+                $str .= '&nbsp;&nbsp;&nbsp;&nbsp;' . $status;
+            }
+
             return $str . '</ol>';
         });
 
@@ -194,7 +199,9 @@ class AppServiceProvider extends ServiceProvider {
         Validator::extend('valid_invoice_items', function($attribute, $value, $parameters) {
             $total = 0;
             foreach ($value as $item) {
-                $total += $item['qty'] * $item['cost'];
+                $qty = isset($item['qty']) ? $item['qty'] : 1;
+                $cost = isset($item['cost']) ? $item['cost'] : 1;
+                $total += $qty * $cost;
             }
             return $total <= MAX_INVOICE_AMOUNT;
         });

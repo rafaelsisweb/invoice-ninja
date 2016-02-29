@@ -32,29 +32,30 @@
             
             {{-- Former::select('recurring_hour')->options($recurringHours) --}}
 
-            {!! Former::inline_radios('custom_invoice_link')
-                    ->onchange('onCustomLinkChange()')
-                    ->label(trans('texts.invoice_link'))
-                    ->radios([
-                        trans('texts.subdomain') => ['value' => 'subdomain', 'name' => 'custom_link'],
-                        trans('texts.website') => ['value' => 'website', 'name' => 'custom_link'],
-                    ])->check($account->iframe_url ? 'website' : 'subdomain') !!}
-            {{ Former::setOption('capitalize_translations', false) }}
-            
-            {!! Former::text('subdomain')
-                        ->placeholder(trans('texts.www'))
-                        ->onchange('onSubdomainChange()')
-                        ->addGroupClass('subdomain')
-                        ->label(' ')
-                        ->help(trans('texts.subdomain_help')) !!}
+            @if (Utils::isNinja())
+                {!! Former::inline_radios('custom_invoice_link')
+                        ->onchange('onCustomLinkChange()')
+                        ->label(trans('texts.invoice_link'))
+                        ->radios([
+                            trans('texts.subdomain') => ['value' => 'subdomain', 'name' => 'custom_link'],
+                            trans('texts.website') => ['value' => 'website', 'name' => 'custom_link'],
+                        ])->check($account->iframe_url ? 'website' : 'subdomain') !!}
+                {{ Former::setOption('capitalize_translations', false) }}
+                
+                {!! Former::text('subdomain')
+                            ->placeholder(trans('texts.www'))
+                            ->onchange('onSubdomainChange()')
+                            ->addGroupClass('subdomain')
+                            ->label(' ')
+                            ->help(trans('texts.subdomain_help')) !!}
 
-            {!! Former::text('iframe_url')
-                        ->placeholder('http://www.example.com/invoice')
-                        ->appendIcon('question-sign')
-                        ->addGroupClass('iframe_url')
-                        ->label(' ')
-                        ->help(trans('texts.subdomain_help')) !!}
-            
+                {!! Former::text('iframe_url')
+                            ->placeholder('http://www.example.com/invoice')
+                            ->appendIcon('question-sign')
+                            ->addGroupClass('iframe_url')
+                            ->label(' ')
+                            ->help(trans('texts.subdomain_help')) !!}
+            @endif
         </div>
     </div>
 
@@ -100,7 +101,7 @@
                 <div class="modal-body">
                     <p>{{ trans('texts.iframe_url_help1') }}</p>
                     <pre>&lt;center&gt;
-    &lt;iframe id="invoiceIFrame" width="1000" height="1200"&gt;&lt;/iframe&gt;
+    &lt;iframe id="invoiceIFrame" width="100%" height="1200" style="max-width:1000px"&gt;&lt;/iframe&gt;
 &lt;center&gt;
 &lt;script language="javascript"&gt;
     var iframe = document.getElementById('invoiceIFrame');

@@ -12,13 +12,14 @@ class Expense extends EntityModel
     use SoftDeletes;
     use PresentableTrait;
 
-    protected $dates = ['deleted_at','expense_date'];
+    protected $dates = ['deleted_at'];
     protected $presenter = 'App\Ninja\Presenters\ExpensePresenter';
 
     protected $fillable = [
         'client_id',
         'vendor_id',
-        'currency_id',
+        'expense_currency_id',
+        'invoice_currency_id',
         'amount',
         'foreign_amount',
         'exchange_rate',
@@ -60,11 +61,6 @@ class Expense extends EntityModel
         return $this->public_id;
     }
 
-    public function getCurrencyId()
-    {
-        return $this->client ? $this->client->currency_id : $this->currency_id;
-    }
-
     public function getDisplayName()
     {
         return $this->getName();
@@ -80,19 +76,9 @@ class Expense extends EntityModel
         return ENTITY_EXPENSE;
     }
 
-    public function apply($amount)
+    public function isExchanged()
     {
-        if ($amount > $this->balance) {
-            $applied = $this->balance;
-            $this->balance = 0;
-        } else {
-            $applied = $amount;
-            $this->balance = $this->balance - $amount;
-        }
-
-        $this->save();
-
-        return $applied;
+        return $this->invoice_currency_id != $this->expense_currency_id;
     }
 }
 

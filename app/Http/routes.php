@@ -1,6 +1,5 @@
 <?php
 
-
 /*
 |--------------------------------------------------------------------------
 | Application Routes
@@ -37,6 +36,7 @@ Route::post('/get_started', 'AccountController@getStarted');
 
 // Client visible pages
 Route::get('view/{invitation_key}', 'PublicClientController@view');
+Route::get('download/{invitation_key}', 'PublicClientController@download');
 Route::get('view', 'HomeController@viewLogo');
 Route::get('approve/{invitation_key}', 'QuoteController@approve');
 Route::get('payment/{invitation_key}/{payment_type?}', 'PaymentController@show_payment');
@@ -97,6 +97,7 @@ Route::group(['middleware' => 'auth'], function() {
     Route::resource('users', 'UserController');
     Route::post('users/bulk', 'UserController@bulk');
     Route::get('send_confirmation/{user_id}', 'UserController@sendConfirmation');
+    Route::get('start_trial', 'AccountController@startTrial');
     Route::get('restore_user/{user_id}', 'UserController@restoreUser');
     Route::post('users/change_password', 'UserController@changePassword');
     Route::get('/switch_account/{user_id}', 'UserController@switchAccount');
@@ -121,13 +122,13 @@ Route::group(['middleware' => 'auth'], function() {
     Route::post('settings/charts_and_reports', 'ReportController@showReports');
 
     Route::post('settings/cancel_account', 'AccountController@cancelAccount');
+    Route::post('settings/company_details', 'AccountController@updateDetails');
     Route::get('settings/{section?}', 'AccountController@showSection');
     Route::post('settings/{section?}', 'AccountController@doSection');
 
-    // Payment term
-    Route::get('api/payment_terms', array('as'=>'api.payment_terms', 'uses'=>'PaymentTermController@getDatatable'));
-    Route::resource('payment_terms', 'PaymentTermController');
-    Route::post('payment_terms/bulk', 'PaymentTermController@bulk');
+    //Route::get('api/payment_terms', array('as'=>'api.payment_terms', 'uses'=>'PaymentTermController@getDatatable'));
+    //Route::resource('payment_terms', 'PaymentTermController');
+    //Route::post('payment_terms/bulk', 'PaymentTermController@bulk');
 
     Route::get('account/getSearchData', array('as' => 'getSearchData', 'uses' => 'AccountController@getSearchData'));
     Route::post('user/setTheme', 'UserController@setTheme');
@@ -187,9 +188,6 @@ Route::group(['middleware' => 'auth'], function() {
     Route::get('api/payments/{client_id?}', array('as'=>'api.payments', 'uses'=>'PaymentController@getDatatable'));
     Route::post('payments/bulk', 'PaymentController@bulk');
 
-    Route::get('credits/{id}/edit', function() {
-        return View::make('header');
-    });
     Route::resource('credits', 'CreditController');
     Route::get('credits/create/{client_id?}/{invoice_id?}', 'CreditController@create');
     Route::get('api/credits/{client_id?}', array('as'=>'api.credits', 'uses'=>'CreditController@getDatatable'));
@@ -219,6 +217,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'api/v1'], function()
     Route::post('login', 'AccountApiController@login');
     Route::get('static', 'AccountApiController@getStaticData');
     Route::get('accounts', 'AccountApiController@show');
+    Route::put('accounts', 'AccountApiController@update');
     Route::resource('clients', 'ClientApiController');
     Route::get('quotes', 'QuoteApiController@index');
     Route::resource('quotes', 'QuoteApiController');
@@ -230,9 +229,11 @@ Route::group(['middleware' => 'api', 'prefix' => 'api/v1'], function()
     Route::resource('tasks', 'TaskApiController');
     Route::post('hooks', 'IntegrationController@subscribe');
     Route::post('email_invoice', 'InvoiceApiController@emailInvoice');
-    Route::post('email_invoicev2', 'InvoiceApiController@emailInvoicev2');
-    Route::get('user_accounts','AccountApiController@getUserAccounts');
+    Route::get('user_accounts', 'AccountApiController@getUserAccounts');
     Route::resource('products', 'ProductApiController');
+    Route::resource('tax_rates', 'TaxRateApiController');
+    Route::resource('users', 'UserApiController');
+    Route::resource('expenses','ExpenseApiController');
 
     // Vendor
     Route::resource('vendors', 'VendorApiController');
@@ -242,6 +243,7 @@ Route::group(['middleware' => 'api', 'prefix' => 'api/v1'], function()
 });
 
 // Redirects for legacy links
+/*
 Route::get('/rocksteady', function() {
     return Redirect::to(NINJA_WEB_URL, 301);
 });
@@ -269,6 +271,7 @@ Route::get('/compare-online-invoicing{sites?}', function() {
 Route::get('/forgot_password', function() {
     return Redirect::to(NINJA_APP_URL.'/forgot', 301);
 });
+*/
 
 if (!defined('CONTACT_EMAIL')) {
     define('CONTACT_EMAIL', Config::get('mail.from.address'));
@@ -422,7 +425,6 @@ if (!defined('CONTACT_EMAIL')) {
 
     define('MAX_NUM_VENDORS', 100);
     define('MAX_NUM_VENDORS_PRO', 20000);
-    define('MAX_NUM_VENDORS_LEGACY', 500);
 
     define('INVOICE_STATUS_DRAFT', 1);
     define('INVOICE_STATUS_SENT', 2);
@@ -507,7 +509,7 @@ if (!defined('CONTACT_EMAIL')) {
     define('NINJA_GATEWAY_CONFIG', 'NINJA_GATEWAY_CONFIG');
     define('NINJA_WEB_URL', 'https://www.invoiceninja.com');
     define('NINJA_APP_URL', 'https://app.invoiceninja.com');
-    define('NINJA_VERSION', '2.4.9.6');
+    define('NINJA_VERSION', '2.5.0.3');
     define('NINJA_DATE', '2000-01-01');
 
     define('SOCIAL_LINK_FACEBOOK', 'https://www.facebook.com/invoiceninja');
@@ -666,9 +668,8 @@ if (Utils::isNinjaDev()) {
 */
 
 /*
-if (Auth::check() && Auth::user()->id === 1)
+if (Utils::isNinjaDev() && Auth::check() && Auth::user()->id === 1)
 {
   Auth::loginUsingId(1);
 }
 */
-

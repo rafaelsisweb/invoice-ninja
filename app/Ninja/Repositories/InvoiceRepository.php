@@ -418,8 +418,7 @@ class InvoiceRepository extends BaseRepository
                 $expense->save();
             }
 
-            if ($item['product_key']) {
-                $productKey = trim($item['product_key']);
+            if ($productKey = trim($item['product_key'])) {
                 if (\Auth::user()->account->update_products && ! strtotime($productKey)) {
                     $product = Product::findProductByKey($productKey);
                     if (!$product) {
@@ -673,6 +672,8 @@ class InvoiceRepository extends BaseRepository
         $sql = implode(' OR ', $dates);
         $invoices = Invoice::whereAccountId($account->id)
                     ->where('balance', '>', 0)
+                    ->where('is_quote', '=', false)
+                    ->where('is_recurring', '=', false)
                     ->whereRaw('('.$sql.')')
                     ->get();
 

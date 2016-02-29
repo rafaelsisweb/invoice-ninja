@@ -1,6 +1,7 @@
 <?php namespace App\Http\Controllers;
 
 use Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
 use Utils;
 use Response;
@@ -12,23 +13,27 @@ use App\Models\Contact;
 use App\Models\Product;
 use App\Models\Invitation;
 use App\Ninja\Repositories\ClientRepository;
+use App\Ninja\Repositories\PaymentRepository;
 use App\Ninja\Repositories\InvoiceRepository;
 use App\Ninja\Mailers\ContactMailer as Mailer;
 use App\Http\Controllers\BaseAPIController;
 use App\Ninja\Transformers\InvoiceTransformer;
 use App\Http\Requests\CreateInvoiceRequest;
 use App\Http\Requests\UpdateInvoiceRequest;
+use App\Services\InvoiceService;
 
 class InvoiceApiController extends BaseAPIController
 {
     protected $invoiceRepo;
 
-    public function __construct(InvoiceRepository $invoiceRepo, ClientRepository $clientRepo, Mailer $mailer)
+    public function __construct(InvoiceService $invoiceService, InvoiceRepository $invoiceRepo, ClientRepository $clientRepo, PaymentRepository $paymentRepo, Mailer $mailer)
     {
         parent::__construct();
 
         $this->invoiceRepo = $invoiceRepo;
         $this->clientRepo = $clientRepo;
+        $this->paymentRepo = $paymentRepo;
+        $this->invoiceService = $invoiceService;
         $this->mailer = $mailer;
     }
 
@@ -82,6 +87,36 @@ class InvoiceApiController extends BaseAPIController
         return $this->response($data);
     }
 
+        /**
+         * @SWG\Get(
+         *   path="/invoices/{invoice_id}",
+         *   summary="Individual Invoice",
+         *   tags={"invoice"},
+         *   @SWG\Response(
+         *     response=200,
+         *     description="A single invoice",
+         *      @SWG\Schema(type="object", @SWG\Items(ref="#/definitions/Invoice"))
+         *   ),
+         *   @SWG\Response(
+         *     response="default",
+         *     description="an ""unexpected"" error"
+         *   )
+         * )
+         */
+
+    public function show($publicId)
+    {
+
+        $invoice = Invoice::scope($publicId)->withTrashed()->first();
+
+        if(!$invoice)
+            return $this->errorResponse(['message'=>'Invoice does not exist!'], 404);
+
+        $transformer = new InvoiceTransformer(\Auth::user()->account, Input::get('serializer'));
+        $data = $this->createItem($invoice, $transformer, 'invoice');
+
+        return $this->response($data);
+    }
 
     /**
      * @SWG\Post(
@@ -123,14 +158,26 @@ class InvoiceApiController extends BaseAPIController
                 }
 
                 $clientData = ['contact' => ['email' => $email]];
-                foreach (['name', 'private_notes'] as $field) {
+                foreach ([
+                    'name',
+                    'address1',
+                    'address2',
+                    'city',
+                    'state',
+                    'postal_code',
+                    'private_notes',
+                ] as $field) {
                     if (isset($data[$field])) {
                         $clientData[$field] = $data[$field];
                     }
                 }
-                foreach (['first_name', 'last_name'] as $field) {
+                foreach ([
+                    'first_name',
+                    'last_name',
+                    'phone',
+                ] as $field) {
                     if (isset($data[$field])) {
-                        $clientData[$field] = $data[$field];
+                        $clientData['contact'][$field] = $data[$field];
                     }
                 }
 
@@ -142,18 +189,24 @@ class InvoiceApiController extends BaseAPIController
 
         $data = self::prepareData($data, $client);
         $data['client_id'] = $client->id;
-        $invoice = $this->invoiceRepo->save($data);
+        $invoice = $this->invoiceService->save($data);
+        $payment = false;
 
-        if (!isset($data['id'])) {
-            $invitation = Invitation::createNew();
-            $invitation->invoice_id = $invoice->id;
-            $invitation->contact_id = $client->contacts[0]->id;
-            $invitation->invitation_key = str_random(RANDOM_KEY_LENGTH);
-            $invitation->save();
+        // Optionally create payment with invoice
+        if (isset($data['paid']) && $data['paid']) {
+            $payment = $this->paymentRepo->save([
+                'invoice_id' => $invoice->id,
+                'client_id' => $client->id,
+                'amount' => $data['paid']
+            ]);
         }
 
         if (isset($data['email_invoice']) && $data['email_invoice']) {
-            $this->mailer->sendInvoice($invoice);
+            if ($payment) {
+                $this->mailer->sendPaymentConfirmation($payment);
+            } else {
+                $this->mailer->sendInvoice($invoice);
+            }
         }
 
         $invoice = Invoice::scope($invoice->public_id)->with('client', 'invoice_items', 'invitations')->first();
@@ -220,6 +273,19 @@ class InvoiceApiController extends BaseAPIController
 
     private function prepareItem($item)
     {
+        // if only the product key is set we'll load the cost and notes
+        if (!empty($item['product_key']) && empty($item['cost']) && empty($item['notes'])) {
+            $product = Product::findProductByKey($item['product_key']);
+            if ($product) {
+                if (empty($item['cost'])) {
+                    $item['cost'] = $product->cost;
+                }
+                if (empty($item['notes'])) {
+                    $item['notes'] = $product->notes;
+                }
+            }
+        }
+
         $fields = [
             'cost' => 0,
             'product_key' => '',
@@ -233,19 +299,6 @@ class InvoiceApiController extends BaseAPIController
             }
         }
 
-        // if only the product key is set we'll load the cost and notes
-        if ($item['product_key'] && (is_null($item['cost']) || is_null($item['notes']))) {
-            $product = Product::findProductByKey($item['product_key']);
-            if ($product) {
-                if (is_null($item['cost'])) {
-                    $item['cost'] = $product->cost;
-                }
-                if (is_null($item['notes'])) {
-                    $item['notes'] = $product->notes;
-                }
-            }
-        }
-
         return $item;
     }
 
@@ -254,12 +307,17 @@ class InvoiceApiController extends BaseAPIController
         $data = Input::all();
         $error = null;
 
-        $invoice = Invoice::scope($data['id'])->firstOrFail();
+        $invoice = Invoice::scope($data['id'])->withTrashed()->first();
 
-        $this->mailer->sendInvoice($invoice);
+        if(!$invoice)
+            return $this->errorResponse(['message'=>'Invoice does not exist.'], 400);
+
+
+        $this->mailer->sendInvoice($invoice, false, false);
+
 
         if($error) {
-            $response['error'] = "There was an error sending the invoice";
+            return $this->errorResponse(['message'=>'There was an error sending the invoice'], 400);
         }
         else {
             $response = json_encode(RESULT_SUCCESS, JSON_PRETTY_PRINT);
@@ -323,7 +381,7 @@ class InvoiceApiController extends BaseAPIController
 
         $data = $request->input();
         $data['public_id'] = $publicId;
-        $this->invoiceRepo->save($data);
+        $this->invoiceService->save($data);
 
         $invoice = Invoice::scope($publicId)->with('client', 'invoice_items', 'invitations')->firstOrFail();
         $transformer = new InvoiceTransformer(\Auth::user()->account, Input::get('serializer'));

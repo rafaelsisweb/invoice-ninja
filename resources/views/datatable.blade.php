@@ -42,8 +42,12 @@
         });
     @endif
 
+    function refreshDatatable() {
+        window.dataTable.api().ajax.reload();
+    }
+
     function load_{{ $class }}() {
-        jQuery('.{{ $class }}').dataTable({
+        window.dataTable = jQuery('.{{ $class }}').dataTable({
             "fnRowCallback": function(row, data) { 
                 if (data[0].indexOf('ENTITY_DELETED') > 0) {
                     $(row).addClass('entityDeleted');
@@ -56,10 +60,16 @@
             @if (isset($hasCheckboxes) && $hasCheckboxes)
             'aaSorting': [['1', 'asc']],
             // Disable sorting on the first column
-            "aoColumnDefs": [ {
-                'bSortable': false,
-                'aTargets': [ 0, {{ count($columns) - 1 }} ]
-            } ],
+            "aoColumnDefs": [ 
+                {
+                    'bSortable': false,
+                    'aTargets': [ 0, {{ count($columns) - 1 }} ]
+                },
+                {
+                    'sClass': 'right',
+                    'aTargets': {{ isset($values['rightAlign']) ? json_encode($values['rightAlign']) : '[]' }}
+                }
+            ],
             @endif
             @foreach ($options as $k => $o)
             {!! json_encode($k) !!}: {!! json_encode($o) !!},

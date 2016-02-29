@@ -64,6 +64,12 @@ class APICest
         $this->createEntity('payment', $data);
         $this->listEntities('payment');
 
+        $data = new stdClass;
+        $data->name = $this->faker->word;
+        $data->rate = $this->faker->numberBetween(1, 10);
+        $this->createEntity('tax_rate', $data);
+        $this->listEntities('tax_rate');
+
         $this->listEntities('account');
     }
 
@@ -110,6 +116,8 @@ class APICest
         curl_setopt_array($curl, $opts);
         $response = curl_exec($curl);
         curl_close($curl);
+
+        //Debug::debug('Response: ' . $response);
 
         return json_decode($response);
     }

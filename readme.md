@@ -5,15 +5,12 @@
 # Invoice Ninja
 ### [https://www.invoiceninja.com](https://www.invoiceninja.com)
 
+[![Build Status](https://travis-ci.org/invoiceninja/invoiceninja.svg?branch=master)](https://travis-ci.org/invoiceninja/invoiceninja)
 [![Join the chat at https://gitter.im/hillelcoren/invoice-ninja](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/hillelcoren/invoice-ninja?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Referral Program
-* $100 per signup paid over 3 years - [Learn more](https://www.invoiceninja.com/referral-program/)
-
-### Reseller Program
-There are two options:
-* 10% of revenue
-* $1,000 for a site limited to 1,000 users
+### Affiliates Programs
+* Referral program (we pay you): $100 per signup paid over 3 years - [Learn more](https://www.invoiceninja.com/referral-program/)
+* White-label reseller (you pay us): 10% of revenue with a $100 sign up fee
 
 ### Installation Options
 * [Self-Host Zip](https://www.invoiceninja.com/knowledgebase/self-host/) - Free
@@ -26,11 +23,16 @@ There are two options:
 * MCrypt PHP Extension
 * MySQL
 
+### Recommended Providers
+* [Stripe](https://stripe.com/)
+* [Postmark](https://postmarkapp.com/)
+
 ### Features
 * Built using Laravel 5
 * Live PDF generation using [pdfmake](http://pdfmake.org/)
 * Integrates with 50+ payment providers with [OmniPay](https://github.com/thephpleague/omnipay)
 * Recurring invoices with auto-billing
+* Expenses and vendors
 * Tasks with time-tracking
 * Multi-user/multi-company support
 * Tax rates and payment terms
@@ -38,12 +40,7 @@ There are two options:
 * Partial payments
 * Client portal
 * Custom email templates
-* [Zapier](https://zapier.com/) integration
 * [D3.js](http://d3js.org/) visualizations
-
-### Recommended Providers
-* [Stripe](https://stripe.com/)
-* [Postmark](https://postmarkapp.com/)
 
 ### Documentation
 * [Ubuntu and Apache](http://blog.technerdservices.com/index.php/2015/04/techpop-how-to-install-invoice-ninja-on-ubuntu-14-04/)
@@ -53,6 +50,9 @@ There are two options:
 * [API Documentation](https://www.invoiceninja.com/knowledgebase/api-documentation/)
 * [Support Forum](https://www.invoiceninja.com/forums/forum/support/)
 * [Feature Roadmap](https://trello.com/b/63BbiVVe/)
+
+### Pull Requests
+We're using the [Git-Flow](http://nvie.com/posts/a-successful-git-branching-model/) model of branching and releasing, **please create pull requests against the develop branch**.
 
 ### Contributors
 * [Troels Liebe Bentsen](https://github.com/tlbdk)

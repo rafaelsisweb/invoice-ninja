@@ -215,6 +215,7 @@ function InvoiceModel(data) {
     self.invoice_date = ko.observable('');
     self.invoice_number = ko.observable('');
     self.due_date = ko.observable('');
+    self.recurring_due_date = ko.observable('');
     self.start_date = ko.observable('');
     self.end_date = ko.observable('');
     self.last_sent_date = ko.observable('');
@@ -625,7 +626,7 @@ function ContactModel(data) {
     self.displayName = ko.computed(function() {
         var str = '';
         if (self.first_name() || self.last_name()) {
-            str += self.first_name() + ' ' + self.last_name() + '\n';
+            str += (self.first_name() || '') + ' ' + (self.last_name() || '') + '\n';
         }
         if (self.email()) {
             str += self.email() + '\n';
@@ -636,8 +637,9 @@ function ContactModel(data) {
 
     self.email.display = ko.computed(function() {
         var str = '';
+
         if (self.first_name() || self.last_name()) {
-            str += self.first_name() + ' ' + self.last_name() + '<br/>';
+            str += (self.first_name() || '') + ' ' + (self.last_name() || '') + '<br/>';
         }
         if (self.email()) {
             str += self.email() + '<br/>';
@@ -785,14 +787,7 @@ function ItemModel(data) {
 
     this.totals.total = ko.computed(function() {
         var total = self.totals.rawTotal();
-        return total ? model.invoice().formatMoney(total) : '';
-        /*
-        if (window.hasOwnProperty('model') && model.invoice && model.invoice() && model.invoice().client()) {
-            return total ? model.invoice().formatMoney(total) : '';
-        } else {
-            return total ? model.invoice().formatMoney(total, 1) : '';
-        }
-        */
+        return window.hasOwnProperty('model') && total ? model.invoice().formatMoney(total) : '';
     });
 
     this.hideActions = function() {

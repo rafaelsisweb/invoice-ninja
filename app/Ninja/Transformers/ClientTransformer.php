@@ -40,9 +40,14 @@ class ClientTransformer extends EntityTransformer
     * @SWG\Property(property="language_id", type="integer", example=1)
     */
 
-    protected $availableIncludes = [
+    protected $defaultIncludes = [
         'contacts',
+    ];
+
+    protected $availableIncludes = [
         'invoices',
+        'credits',
+        'expenses',
     ];
     
     public function includeContacts(Client $client)
@@ -56,6 +61,19 @@ class ClientTransformer extends EntityTransformer
         $transformer = new InvoiceTransformer($this->account, $this->serializer);
         return $this->includeCollection($client->invoices, $transformer, ENTITY_INVOICE);
     }
+
+    public function includeCredits(Client $client)
+    {
+        $transformer = new CreditTransformer($this->account, $this->serializer);
+        return $this->includeCollection($client->credits, $transformer, ENTITY_CREDIT);
+    }
+
+    public function includeExpenses(Client $client)
+    {
+        $transformer = new ExpenseTransformer($this->account, $this->serializer);
+        return $this->includeCollection($client->expenses, $transformer, ENTITY_EXPENSE);
+    }
+
 
     public function transform(Client $client)
     {
@@ -85,7 +103,9 @@ class ClientTransformer extends EntityTransformer
             'vat_number' => $client->vat_number,
             'id_number' => $client->id_number,
             'language_id' => (int) $client->language_id,
-            'currency_id' => (int) $client->currency_id
+            'currency_id' => (int) $client->currency_id,
+            'custom_value1' => $client->custom_value1,
+            'custom_value2' => $client->custom_value2,
         ];
     }
 }

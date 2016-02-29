@@ -96,7 +96,7 @@ class ExpenseController extends BaseController
     {
         $expense = Expense::scope($publicId)->firstOrFail();
         $expense->expense_date = Utils::fromSqlDate($expense->expense_date);
-
+        
         $actions = [];
         if ($expense->invoice) {
             $actions[] = ['url' => URL::to("invoices/{$expense->invoice->public_id}/edit"), 'label' => trans("texts.view_invoice")];
@@ -200,8 +200,8 @@ class ExpenseController extends BaseController
                     }
 
                     if (!$currencyId) {
-                        $currencyId = $expense->getCurrencyId();
-                    } elseif ($currencyId != $expense->getCurrencyId() && $expense->getCurrencyId()) {
+                        $currencyId = $expense->invoice_currency_id;
+                    } elseif ($currencyId != $expense->invoice_currency_id && $expense->invoice_currency_id) {
                         Session::flash('error', trans('texts.expense_error_multiple_currencies'));
                         return Redirect::to('expenses');
                     }

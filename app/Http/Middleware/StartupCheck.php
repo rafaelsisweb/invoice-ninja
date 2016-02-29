@@ -35,7 +35,7 @@ class StartupCheck
 
         // Ensure all request are over HTTPS in production
         if (Utils::requireHTTPS() && !Request::secure()) {
-            //return Redirect::secure(Request::path());
+            return Redirect::secure(Request::path());
         }
 
         // If the database doens't yet exist we'll skip the rest
@@ -139,7 +139,7 @@ class StartupCheck
                 } elseif ($productId == PRODUCT_WHITE_LABEL) {
                     if ($data == 'valid') {
                         $account = Auth::user()->account;
-                        $account->pro_plan_paid = NINJA_DATE;
+                        $account->pro_plan_paid = date_create()->format('Y-m-d');
                         $account->save();
 
                         Session::flash('message', trans('texts.bought_white_label'));

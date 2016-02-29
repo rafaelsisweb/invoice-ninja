@@ -92,10 +92,10 @@ class ExpenseService extends BaseService
                     // show both the amount and the converted amount
                     if ($model->exchange_rate != 1) {
                         $converted = round($model->amount * $model->exchange_rate, 2);
-                        return Utils::formatMoney($model->amount, $model->account_currency_id, $model->account_country_id) . ' | ' . 
-                            Utils::formatMoney($converted, $model->currency_id, $model->client_country_id);
+                        return Utils::formatMoney($model->amount, $model->expense_currency_id) . ' | ' . 
+                            Utils::formatMoney($converted, $model->invoice_currency_id);
                     } else {
-                        return Utils::formatMoney($model->amount, $model->currency_id, $model->account_country_id);
+                        return Utils::formatMoney($model->amount, $model->expense_currency_id);
                     }
                 }
             ],
@@ -106,7 +106,7 @@ class ExpenseService extends BaseService
                 }
             ],
             [
-                'invoice_id',
+                'expense_status_id',
                 function ($model) {
                     return self::getStatusLabel($model->invoice_id, $model->should_be_invoiced);
                 }

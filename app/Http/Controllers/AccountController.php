@@ -29,6 +29,8 @@ use App\Events\UserLoggedIn;
 use App\Events\UserSettingsChanged;
 use App\Services\AuthService;
 
+use App\Http\Requests\UpdateAccountRequest;
+
 class AccountController extends BaseController
 {
     protected $accountRepo;
@@ -115,13 +117,7 @@ class AccountController extends BaseController
     {
         Session::put("show_trash:{$entityType}", $visible == 'true');
 
-        if ($entityType == 'user') {
-            return Redirect::to('settings/'.ACCOUNT_USER_MANAGEMENT);
-        } elseif ($entityType == 'token') {
-            return Redirect::to('settings/'.ACCOUNT_API_TOKENS);
-        } else {
-            return Redirect::to("{$entityType}s");
-        }
+        return RESULT_SUCCESS;
     }
 
     public function getSearchData()
@@ -611,11 +607,12 @@ class AccountController extends BaseController
             $iframeURL = rtrim($iframeURL, "/");
 
             $subdomain = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', substr(strtolower(Input::get('subdomain')), 0, MAX_SUBDOMAIN_LENGTH));
-            if ($iframeURL || !$subdomain || in_array($subdomain, ['www', 'app', 'mail', 'admin', 'blog', 'user', 'contact', 'payment', 'payments', 'billing', 'invoice', 'business', 'owner'])) {
+            if ($iframeURL) {
                 $subdomain = null;
             }
             if ($subdomain) {
-                $rules['subdomain'] = "unique:accounts,subdomain,{$user->account_id},id";
+                $exclude = ['www', 'app', 'mail', 'admin', 'blog', 'user', 'contact', 'payment', 'payments', 'billing', 'invoice', 'business', 'owner', 'info', 'ninja'];
+                $rules['subdomain'] = "unique:accounts,subdomain,{$user->account_id},id|not_in:" . implode(',', $exclude);
             }
 
             $validator = Validator::make(Input::all(), $rules);
@@ -722,7 +719,6 @@ class AccountController extends BaseController
 
     private function saveInvoiceDesign()
     {
-        //dd(Input::get('all_pages_header'));
         if (Auth::user()->account->isPro()) {
             $account = Auth::user()->account;
             $account->hide_quantity = Input::get('hide_quantity') ? true : false;
@@ -767,80 +763,52 @@ class AccountController extends BaseController
         return Redirect::to('settings/'.ACCOUNT_NOTIFICATIONS);
     }
 
-    private function saveDetails()
+    public function updateDetails(UpdateAccountRequest $request)
     {
-        $rules = array(
-            'name' => 'required',
-            'logo' => 'sometimes|max:'.MAX_LOGO_FILE_SIZE.'|mimes:jpeg,gif,png',
-        );
+        $account = Auth::user()->account;
+        $this->accountRepo->save($request->input(), $account);
 
-        $validator = Validator::make(Input::all(), $rules);
+        /* Logo image file */
+        if ($file = Input::file('logo')) {
+            $path = Input::file('logo')->getRealPath();
+            File::delete('logo/'.$account->account_key.'.jpg');
+            File::delete('logo/'.$account->account_key.'.png');
 
-        if ($validator->fails()) {
-            return Redirect::to('settings/'.ACCOUNT_COMPANY_DETAILS)
-                ->withErrors($validator)
-                ->withInput();
-        } else {
-            $account = Auth::user()->account;
-            $account->name = trim(Input::get('name'));
-            $account->id_number = trim(Input::get('id_number'));
-            $account->vat_number = trim(Input::get('vat_number'));
-            $account->work_email = trim(Input::get('work_email'));
-            $account->website = trim(Input::get('website'));
-            $account->work_phone = trim(Input::get('work_phone'));
-            $account->address1 = trim(Input::get('address1'));
-            $account->address2 = trim(Input::get('address2'));
-            $account->city = trim(Input::get('city'));
-            $account->state = trim(Input::get('state'));
-            $account->postal_code = trim(Input::get('postal_code'));
-            $account->country_id = Input::get('country_id') ? Input::get('country_id') : null;
-            $account->size_id = Input::get('size_id') ? Input::get('size_id') : null;
-            $account->industry_id = Input::get('industry_id') ? Input::get('industry_id') : null;
-            $account->email_footer = Input::get('email_footer');
-            $account->save();
+            $mimeType = $file->getMimeType();
 
-            /* Logo image file */
-            if ($file = Input::file('logo')) {
-                $path = Input::file('logo')->getRealPath();
-                File::delete('logo/'.$account->account_key.'.jpg');
-                File::delete('logo/'.$account->account_key.'.png');
-
-                $mimeType = $file->getMimeType();
-
-                if ($mimeType == 'image/jpeg') {
-                    $path = 'logo/'.$account->account_key.'.jpg';
-                    $file->move('logo/', $account->account_key.'.jpg');
-                } elseif ($mimeType == 'image/png') {
-                    $path = 'logo/'.$account->account_key.'.png';
-                    $file->move('logo/', $account->account_key.'.png');
-                } else {
-                    if (extension_loaded('fileinfo')) {
-                        $image = Image::make($path);
-                        $image->resize(200, 120, function ($constraint) {
-                            $constraint->aspectRatio();
-                        });
-                        $path = 'logo/'.$account->account_key.'.jpg';
-                        Image::canvas($image->width(), $image->height(), '#FFFFFF')
-                            ->insert($image)->save($path);
-                    } else {
-                        Session::flash('warning', 'Warning: To support gifs the fileinfo PHP extension needs to be enabled.');
-                    }
-                }
-
-                // make sure image isn't interlaced
+            if ($mimeType == 'image/jpeg') {
+                $path = 'logo/'.$account->account_key.'.jpg';
+                $file->move('logo/', $account->account_key.'.jpg');
+            } elseif ($mimeType == 'image/png') {
+                $path = 'logo/'.$account->account_key.'.png';
+                $file->move('logo/', $account->account_key.'.png');
+            } else {
                 if (extension_loaded('fileinfo')) {
-                    $img = Image::make($path);
-                    $img->interlace(false);
-                    $img->save();
+                    $image = Image::make($path);
+                    $image->resize(200, 120, function ($constraint) {
+                        $constraint->aspectRatio();
+                    });
+                    $path = 'logo/'.$account->account_key.'.jpg';
+                    Image::canvas($image->width(), $image->height(), '#FFFFFF')
+                        ->insert($image)->save($path);
+                } else {
+                    Session::flash('warning', 'Warning: To support gifs the fileinfo PHP extension needs to be enabled.');
                 }
             }
 
-            event(new UserSettingsChanged());
-
-            Session::flash('message', trans('texts.updated_settings'));
-
-            return Redirect::to('settings/'.ACCOUNT_COMPANY_DETAILS);
+            // make sure image isn't interlaced
+            if (extension_loaded('fileinfo')) {
+                $img = Image::make($path);
+                $img->interlace(false);
+                $img->save();
+            }
         }
+
+        event(new UserSettingsChanged());
+
+        Session::flash('message', trans('texts.updated_settings'));
+
+        return Redirect::to('settings/'.ACCOUNT_COMPANY_DETAILS);
     }
 
     private function saveUserDetails()
@@ -887,6 +855,7 @@ class AccountController extends BaseController
         $account->currency_id = Input::get('currency_id') ? Input::get('currency_id') : 1; // US Dollar
         $account->language_id = Input::get('language_id') ? Input::get('language_id') : 1; // English
         $account->military_time = Input::get('military_time') ? true : false;
+        $account->show_currency_code = Input::get('show_currency_code') ? true : false;
         $account->save();
 
         event(new UserSettingsChanged());
@@ -941,6 +910,8 @@ class AccountController extends BaseController
         $user->registered = true;
         $user->save();
 
+        $user->account->startTrial();
+
         if (Input::get('go_pro') == 'true') {
             Session::set(REQUESTED_PRO_PLAN, true);
         }
@@ -981,7 +952,13 @@ class AccountController extends BaseController
                 'text' => $reason,
             ];
 
-            $this->userMailer->sendTo(CONTACT_EMAIL, $email, $name, 'Invoice Ninja Feedback [Canceled Account]', 'contact', $data);
+            $subject = 'Invoice Ninja - Canceled Account';
+
+            if (Auth::user()->isPaidPro()) {
+                $subject .= ' [PRO]';
+            }
+
+            $this->userMailer->sendTo(CONTACT_EMAIL, $email, $name, $subject, 'contact', $data);
         }
 
         $user = Auth::user();
@@ -1003,6 +980,17 @@ class AccountController extends BaseController
         $this->userMailer->sendConfirmation($user);
 
         return Redirect::to('/settings/'.ACCOUNT_USER_DETAILS)->with('message', trans('texts.confirmation_resent'));
+    }
+
+    public function startTrial()
+    {
+        $user = Auth::user();
+
+        if ($user->isEligibleForTrial()) {
+            $user->account->startTrial();
+        }
+
+        return Redirect::back()->with('message', trans('texts.trial_success'));
     }
 
     public function redirectLegacy($section, $subSection = false)

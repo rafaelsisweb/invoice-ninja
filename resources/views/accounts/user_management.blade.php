@@ -6,7 +6,7 @@
 
 
   <div class="pull-right">  
-    @if (Utils::isPro())    
+    @if (Utils::isPro() && ! Utils::isTrial())
         {!! Button::primary(trans('texts.add_user'))->asLinkTo(URL::to('/users/create'))->appendIcon(Icon::create('plus-sign')) !!}
     @endif
   </div>
@@ -39,7 +39,11 @@
 
     function setTrashVisible() {
         var checked = $('#trashed').is(':checked');
-        window.location = '{!! URL::to('view_archive/user') !!}' + (checked ? '/true' : '/false');
+        var url = '{{ URL::to('view_archive/user') }}' + (checked ? '/true' : '/false');
+
+        $.get(url, function(data) {
+            refreshDatatable();
+        })
     }
 
   </script>
