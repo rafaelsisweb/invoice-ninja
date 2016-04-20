@@ -30,7 +30,7 @@ class AppController extends BaseController
 
     public function __construct(AccountRepository $accountRepo, Mailer $mailer, EmailService $emailService)
     {
-        parent::__construct();
+        //parent::__construct();
 
         $this->accountRepo = $accountRepo;
         $this->mailer = $mailer;
@@ -78,28 +78,37 @@ class AppController extends BaseController
         } elseif (!$valid) {
             return Redirect::to('/setup')->withInput();
         }
-        
+
         if (Utils::isDatabaseSetup() && Account::count() > 0) {
             return Redirect::to('/');
         }
 
-        $config = "APP_ENV=production\n".
-                    "APP_DEBUG={$app['debug']}\n".
-                    "APP_URL={$app['url']}\n".
-                    "APP_KEY={$app['key']}\n\n".
-                    "DB_TYPE={$dbType}\n".
-                    "DB_HOST={$database['type']['host']}\n".
-                    "DB_DATABASE={$database['type']['database']}\n".
-                    "DB_USERNAME={$database['type']['username']}\n".
-                    "DB_PASSWORD={$database['type']['password']}\n\n".
-                    "MAIL_DRIVER={$mail['driver']}\n".
-                    "MAIL_PORT={$mail['port']}\n".
-                    "MAIL_ENCRYPTION={$mail['encryption']}\n".
-                    "MAIL_HOST={$mail['host']}\n".
-                    "MAIL_USERNAME={$mail['username']}\n".
-                    "MAIL_FROM_NAME={$mail['from']['name']}\n".
-                    "MAIL_PASSWORD={$mail['password']}\n\n".
-                    "PHANTOMJS_CLOUD_KEY='a-demo-key-with-low-quota-per-ip-address'";
+        $_ENV['APP_ENV']='production';
+        $_ENV['APP_DEBUG']=$app['debug'];
+        $_ENV['APP_URL']=$app['url'];
+        $_ENV['APP_KEY']=$app['key'];
+        $_ENV['DB_TYPE']=$dbType;
+        $_ENV['DB_HOST']=$database['type']['host'];
+        $_ENV['DB_DATABASE']=$database['type']['database'];
+        $_ENV['DB_USERNAME']=$database['type']['username'];
+        $_ENV['DB_PASSWORD']=$database['type']['password'];
+        $_ENV['MAIL_DRIVER']=$mail['driver'];
+        $_ENV['MAIL_PORT']=$mail['port'];
+        $_ENV['MAIL_ENCRYPTION']=$mail['encryption'];
+        $_ENV['MAIL_HOST']=$mail['host'];
+        $_ENV['MAIL_USERNAME']=$mail['username'];;
+
+        $config = '';
+        foreach ($_ENV as $key => $val) {
+            if (is_array($val)) {
+                continue;
+            }
+            if (preg_match('/\s/', $val)) {
+                $val = "'{$val}'";
+            }
+            $config .= "{$key}={$val}\n";
+        }
+
 
         // Write Config Settings
         $fp = fopen(base_path()."/.env", 'w');
@@ -114,7 +123,7 @@ class AppController extends BaseController
         }
         Cache::flush();
         Artisan::call('optimize', array('--force' => true));
-        
+
         $firstName = trim(Input::get('first_name'));
         $lastName = trim(Input::get('last_name'));
         $email = trim(strtolower(Input::get('email')));
@@ -152,7 +161,7 @@ class AppController extends BaseController
         $_ENV['DB_DATABASE'] = $db['type']['database'];
         $_ENV['DB_USERNAME'] = $db['type']['username'];
         $_ENV['DB_PASSWORD'] = $db['type']['password'];
-        
+
         if ($mail) {
             $_ENV['MAIL_DRIVER'] = $mail['driver'];
             $_ENV['MAIL_PORT'] = $mail['port'];
@@ -166,6 +175,9 @@ class AppController extends BaseController
 
         $config = '';
         foreach ($_ENV as $key => $val) {
+                        if (preg_match('/\s/',$val)) {
+                                $val = "'{$val}'";
+                        }
             $config .= "{$key}={$val}\n";
         }
 
@@ -184,7 +196,7 @@ class AppController extends BaseController
         foreach ($database['connections'][$dbType] as $key => $val) {
             Config::set("database.connections.{$dbType}.{$key}", $val);
         }
-        
+
         try {
             DB::reconnect();
             $valid = DB::connection()->getDatabaseName() ? true : false;
@@ -206,7 +218,7 @@ class AppController extends BaseController
 
         Config::set('mail.from.address', $email);
         Config::set('mail.from.name', $fromName);
-        
+
         $data = [
             'text' => 'Test email',
         ];
@@ -231,7 +243,8 @@ class AppController extends BaseController
                 }
                 Artisan::call('optimize', array('--force' => true));
             } catch (Exception $e) {
-                Response::make($e->getMessage(), 500);
+                Utils::logError($e);
+                return Response::make($e->getMessage(), 500);
             }
         }
 
@@ -243,6 +256,7 @@ class AppController extends BaseController
         if (!Utils::isNinjaProd()) {
             try {
                 set_time_limit(60 * 5);
+                Artisan::call('optimize', array('--force' => true));
                 Cache::flush();
                 Session::flush();
                 Artisan::call('migrate', array('--force' => true));
@@ -250,15 +264,19 @@ class AppController extends BaseController
                     'PaymentLibraries',
                     'Fonts',
                     'Banks',
-                    'InvoiceStatus'
+                    'InvoiceStatus',
+                    'Currencies',
+                    'DateFormats',
+                    'InvoiceDesigns',
+                    'PaymentTerms',
                 ] as $seeder) {
                     Artisan::call('db:seed', array('--force' => true, '--class' => "{$seeder}Seeder"));
                 }
-                Artisan::call('optimize', array('--force' => true));
                 Event::fire(new UserSettingsChanged());
                 Session::flash('message', trans('texts.processed_updates'));
             } catch (Exception $e) {
-                Response::make($e->getMessage(), 500);
+                Utils::logError($e);
+                return Response::make($e->getMessage(), 500);
             }
         }
 
@@ -276,7 +294,7 @@ class AppController extends BaseController
     {
         $messageId = Input::get('MessageID');
         return $this->emailService->markOpened($messageId) ? RESULT_SUCCESS : RESULT_FAILURE;
-        
+
         return RESULT_SUCCESS;
     }
 
@@ -288,7 +306,7 @@ class AppController extends BaseController
         }
 
         if (Utils::getResllerType() == RESELLER_REVENUE_SHARE) {
-            $payments = DB::table('accounts')
+            $data = DB::table('accounts')
                             ->leftJoin('payments', 'payments.account_id', '=', 'accounts.id')
                             ->leftJoin('clients', 'clients.id', '=', 'payments.client_id')
                             ->where('accounts.account_key', '=', NINJA_ACCOUNT_KEY)
@@ -300,15 +318,9 @@ class AppController extends BaseController
                                 'payments.amount'
                             ]);
         } else {
-            $payments = DB::table('accounts')
-                            ->leftJoin('payments', 'payments.account_id', '=', 'accounts.id')
-                            ->leftJoin('clients', 'clients.id', '=', 'payments.client_id')
-                            ->where('accounts.account_key', '=', NINJA_ACCOUNT_KEY)
-                            ->where('payments.is_deleted', '=', false)
-                            ->groupBy('clients.id')
-                            ->count();
+            $data = DB::table('users')->count();
         }
 
-        return json_encode($payments);
+        return json_encode($data);
     }
 }
