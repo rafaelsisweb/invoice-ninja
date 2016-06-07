@@ -9,7 +9,7 @@ class EntityRequest extends Request {
     protected $entityType;
     private $entity;
 
-    public function entity() 
+    public function entity()
     {
         if ($this->entity) {
             return $this->entity;
@@ -20,16 +20,16 @@ class EntityRequest extends Request {
         foreach (['_id', 's'] as $suffix) {
             $field = $this->entityType . $suffix;
             if ($this->$field) {
-                $publicId= $this->$field; 
-            } 
+                $publicId= $this->$field;
+            }
         }
         if ( ! $publicId) {
             $publicId = Input::get('public_id') ?: Input::get('id');
         }
         if ( ! $publicId) {
             return null;
-        } 
-        
+        }
+
         $class = Utils::getEntityClass($this->entityType);
         
         if (method_exists($class, 'withTrashed')) {
@@ -37,7 +37,7 @@ class EntityRequest extends Request {
         } else {
             $this->entity = $class::scope($publicId)->firstOrFail();
         }
-        
+
         return $this->entity;
     }
 
