@@ -24,9 +24,14 @@ class EntityModel extends Eloquent
             Utils::fatalError();
         }
 
-        $lastEntity = $className::withTrashed()
-                        ->scope(false, $entity->account_id)
-                        ->orderBy('public_id', 'DESC')
+        if(method_exists($className, 'withTrashed')){
+            $lastEntity = $className::withTrashed()
+                        ->scope(false, $entity->account_id);
+        } else {
+            $lastEntity = $className::scope(false, $entity->account_id);
+        }
+
+        $lastEntity = $lastEntity->orderBy('public_id', 'DESC')
                         ->first();
 
         if ($lastEntity) {
@@ -81,6 +86,15 @@ class EntityModel extends Eloquent
         return $query;
     }
 
+    public function scopeViewable($query)
+    {
+        if (Auth::check() && ! Auth::user()->hasPermission('view_all')) {
+            $query->where($this->getEntityType(). 's.user_id', '=', Auth::user()->id);
+        }
+
+        return $query;
+    }
+
     public function scopeWithArchived($query)
     {
         return $query->withTrashed()->where('is_deleted', '=', false);
@@ -94,6 +108,16 @@ class EntityModel extends Eloquent
     public function getDisplayName()
     {
         return $this->getName();
+    }
+
+    public static function getClassName($entityType)
+    {
+        return 'App\\Models\\' . ucwords(Utils::toCamelCase($entityType));
+    }
+
+    public static function getTransformerName($entityType)
+    {
+        return 'App\\Ninja\\Transformers\\' . ucwords(Utils::toCamelCase($entityType)) . 'Transformer';
     }
 
     public function setNullValues()
@@ -112,57 +136,5 @@ class EntityModel extends Eloquent
         $parts = explode('\\', $class);
         $name = $parts[count($parts)-1];
         return strtolower($name) . '_id';
-    }
-    
-    public static function canCreate() {
-        return Auth::user()->hasPermission('create_all');
-    }
-    
-    public function canEdit() {
-        return static::canEditItem($this);
-    }
-    
-    public static function canEditItem($item) {
-        return Auth::user()->hasPermission('edit_all') || (isset($item->user_id) && Auth::user()->id == $item->user_id);
-    }
-    
-    public static function canEditItemById($item_id) {
-        if(Auth::user()->hasPermission('edit_all')) {
-            return true;
-        }
-        
-        return static::whereId($item_id)->first()->user_id == Auth::user()->id;
-    }
-    
-    public static function canEditItemByOwner($user_id) {
-        if(Auth::user()->hasPermission('edit_all')) {
-            return true;
-        }
-        
-        return Auth::user()->id == $user_id;
-    }
-    
-    public function canView() {
-        return static::canViewItem($this);
-    }
-    
-    public static function canViewItem($item) {
-        return Auth::user()->hasPermission('view_all') || (isset($item->user_id) && Auth::user()->id == $item->user_id);
-    }
-    
-    public static function canViewItemById($item_id) {
-        if(Auth::user()->hasPermission('view_all')) {
-            return true;
-        }
-        
-        return static::whereId($item_id)->first()->user_id == Auth::user()->id;
-    }
-    
-    public static function canViewItemByOwner($user_id) {
-        if(Auth::user()->hasPermission('view_all')) {
-            return true;
-        }
-        
-        return Auth::user()->id == $user_id;
     }
 }

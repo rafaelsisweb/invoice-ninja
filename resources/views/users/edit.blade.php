@@ -1,6 +1,6 @@
 @extends('header')
 
-@section('content') 
+@section('content')
   @parent
   @include('accounts.nav', ['selected' => ACCOUNT_USER_MANAGEMENT])
 
@@ -11,7 +11,11 @@
   )); !!}
 
   @if ($user)
-    {!! Former::populate($user) !!}    
+    {!! Former::populate($user) !!}
+    {{ Former::populateField('is_admin', intval($user->is_admin)) }}
+    {{ Former::populateField('permissions[create_all]', intval($user->hasPermission('create'))) }}
+    {{ Former::populateField('permissions[view_all]', intval($user->hasPermission('view_all'))) }}
+    {{ Former::populateField('permissions[edit_all]', intval($user->hasPermission('edit_all'))) }}
   @endif
 
 <div class="panel panel-default">
@@ -33,6 +37,13 @@
 </div>
 <div class="panel-body form-padding-right">
 
+    @if ( ! Utils::hasFeature(FEATURE_USER_PERMISSIONS))
+      <script>
+          $(function() {
+              $('input[type=checkbox]').prop('disabled', true);
+          })
+      </script>
+    @endif
 
   {!! Former::checkbox('is_admin')
       ->label('&nbsp;')
@@ -56,11 +67,11 @@
       ->id('permissions_edit_all')
       ->text(trans('texts.user_edit_all'))
       ->help(trans('texts.edit_all_help')) !!}
-    
+
 </div>
 </div>
 
-  {!! Former::actions( 
+  {!! Former::actions(
       Button::normal(trans('texts.cancel'))->asLinkTo(URL::to('/settings/user_management'))->appendIcon(Icon::create('remove-circle'))->large(),
       Button::success(trans($user && $user->confirmed ? 'texts.save' : 'texts.send_invite'))->submit()->large()->appendIcon(Icon::create($user && $user->confirmed ? 'floppy-disk' : 'send'))
   )!!}

@@ -21,7 +21,7 @@ class ReportController extends BaseController
         $message = '';
         $fileName = storage_path().'/dataviz_sample.txt';
 
-        if (Auth::user()->account->isPro()) {
+        if (Auth::user()->account->hasFeature(FEATURE_REPORTS)) {
             $account = Account::where('id', '=', Auth::user()->account->id)
                             ->with(['clients.invoices.invoice_items', 'clients.contacts'])
                             ->first();
@@ -99,13 +99,13 @@ class ReportController extends BaseController
             'title' => trans('texts.charts_and_reports'),
         ];
 
-        if (Auth::user()->account->isPro()) {
+        if (Auth::user()->account->hasFeature(FEATURE_REPORTS)) {
             if ($enableReport) {
                 $isExport = $action == 'export';
                 $params = array_merge($params, self::generateReport($reportType, $startDate, $endDate, $dateField, $isExport));
 
                 if ($isExport) {
-                    self::export($params['displayData'], $params['columns'], $params['reportTotals']);
+                    self::export($reportType, $params['displayData'], $params['columns'], $params['reportTotals']);
                 }
             }
             if ($enableChart) {
@@ -248,11 +248,13 @@ class ReportController extends BaseController
                         ->withArchived()
                         ->with('contacts')
                         ->with(['invoices' => function($query) use ($startDate, $endDate, $dateField) {
-                            $query->withArchived();
-                            if ($dateField == FILTER_PAYMENT_DATE) {
+                            $query->with('invoice_items')->withArchived();
+                            if ($dateField == FILTER_INVOICE_DATE) {
                                 $query->where('invoice_date', '>=', $startDate)
                                       ->where('invoice_date', '<=', $endDate)
-                                      ->whereHas('payments', function($query) use ($startDate, $endDate) {
+                                      ->with('payments');
+                            } else {
+                                $query->whereHas('payments', function($query) use ($startDate, $endDate) {
                                             $query->where('payment_date', '>=', $startDate)
                                                   ->where('payment_date', '<=', $endDate)
                                                   ->withArchived();
@@ -260,9 +262,8 @@ class ReportController extends BaseController
                                         ->with(['payments' => function($query) use ($startDate, $endDate) {
                                             $query->where('payment_date', '>=', $startDate)
                                                   ->where('payment_date', '<=', $endDate)
-                                                  ->withArchived()
-                                                  ->with('payment_type', 'account_gateway.gateway');
-                                  }, 'invoice_items']);
+                                                  ->withArchived();
+                                        }]);
                             }
                         }]);
 
@@ -514,11 +515,14 @@ class ReportController extends BaseController
         return $data;
     }
 
-    private function export($data, $columns, $totals)
+    private function export($reportType, $data, $columns, $totals)
     {
         $output = fopen('php://output', 'w') or Utils::fatalError();
+        $reportType = trans("texts.{$reportType}s"); 
+        $date = date('Y-m-d');
+        
         header('Content-Type:application/csv');
-        header('Content-Disposition:attachment;filename=ninja-report.csv');
+        header("Content-Disposition:attachment;filename={$date}_Ninja_{$reportType}.csv");
 
         Utils::exportData($output, $data, Utils::trans($columns));
         
