@@ -781,7 +781,7 @@
           </div>
 
           <div class="panel-body">
-            <p>{{ trans('texts.white_label_text')}}</p>
+            <p>{{ trans('texts.white_label_text', ['price' => WHITE_LABEL_PRICE])}}</p>
             <div class="row">
                 <div class="col-md-6">
                     <h4>{{ trans('texts.before') }}</h4>

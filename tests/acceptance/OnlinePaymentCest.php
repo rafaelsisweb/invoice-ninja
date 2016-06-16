@@ -23,16 +23,13 @@ class OnlinePaymentCest
 
         // set gateway info
         $I->wantTo('create a gateway');
-        $I->amOnPage('/settings/online_payments');
+        $I->amOnPage('/gateways/create/0');
 
-        if (strpos($I->grabFromCurrentUrl(), 'create') !== false) {
-            $I->fillField(['name' =>'23_apiKey'], env('stripe_secret_key') ?: Fixtures::get('stripe_secret_key'));
-            // Fails to load StripeJS causing "ReferenceError: Can't find variable: Stripe"
-            //$I->fillField(['name' =>'stripe_publishable_key'], env('stripe_secret_key') ?: Fixtures::get('stripe_publishable_key'));
-            $I->selectOption('#token_billing_type_id', 4);
-            $I->click('Save');
-            $I->see('Successfully created gateway');
-        }
+        $I->fillField(['name' =>'23_apiKey'], env('stripe_secret_key') ?: Fixtures::get('stripe_secret_key'));
+        // Fails to load StripeJS causing "ReferenceError: Can't find variable: Stripe"
+        //$I->fillField(['name' =>'stripe_publishable_key'], env('stripe_secret_key') ?: Fixtures::get('stripe_publishable_key'));
+        $I->click('Save');
+        $I->see('Successfully created gateway');
 
         // create client
         $I->amOnPage('/clients/create');
@@ -77,7 +74,7 @@ class OnlinePaymentCest
             $I->fillField(['name' => 'postal_code'], $this->faker->postcode);
             $I->selectDropdown($I, 'United States', '.country-select .dropdown-toggle');
             */
-            
+
             $I->fillField('#card_number', '4242424242424242');
             $I->fillField('#cvv', '1234');
             $I->selectOption('#expiration_month', 12);
@@ -94,7 +91,7 @@ class OnlinePaymentCest
         $I->selectDropdown($I, $clientEmail, '.client_select .dropdown-toggle');
         $I->fillField('table.invoice-table tbody tr:nth-child(1) #product_key', $productKey);
         $I->click('table.invoice-table tbody tr:nth-child(1) .tt-selectable');
-        $I->checkOption('#auto_bill');
+        $I->selectOption('#auto_bill', 3);
         $I->executeJS('preparePdfData(\'email\')');
         $I->wait(3);
         $I->see("$0.00");

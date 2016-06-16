@@ -42,7 +42,7 @@ class QuoteApiController extends BaseAPIController
      {
          $invoices = Invoice::scope()
                          ->withTrashed()
-                         ->where('is_quote', '=', '1')
+                         ->quotes()
                          ->with('invoice_items', 'client')
                          ->orderBy('created_at', 'desc');
 

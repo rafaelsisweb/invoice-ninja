@@ -6,6 +6,11 @@ use Auth;
 
 class Document extends EntityModel
 {
+    protected $fillable = [
+        'invoice_id',
+        'expense_id',
+    ];
+
     public static $extraExtensions = array(
         'jpg' => 'jpeg',
         'tif' => 'tiff',

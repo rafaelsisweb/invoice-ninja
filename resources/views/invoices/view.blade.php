@@ -14,7 +14,81 @@
 			body {
 				background-color: #f8f8f8;
 			}
+
+            .dropdown-menu li a{
+                overflow:hidden;
+                margin-top:5px;
+                margin-bottom:5px;
+            }
 		</style>
+
+    @if (!empty($braintreeClientToken))
+        <script type="text/javascript" src="https://js.braintreegateway.com/js/braintree-2.23.0.min.js"></script>
+        <script type="text/javascript" >
+            $(function() {
+                var paypalLink = $('.dropdown-menu a[href$="/braintree_paypal"]'),
+                    paypalUrl = paypalLink.attr('href'),
+                    checkout;
+                paypalLink.parent().attr('id', 'paypal-container');
+                braintree.setup("{{ $braintreeClientToken }}", "custom", {
+                    onReady: function (integration) {
+                        checkout = integration;
+                        $('.dropdown-menu a[href$="#braintree_paypal"]').each(function(){
+                            var el=$(this);
+                            el.attr('href', el.attr('href').replace('#braintree_paypal','?device_data='+encodeURIComponent(integration.deviceData)))
+                        })
+                    },
+                    paypal: {
+                        container: "paypal-container",
+                        singleUse: false,
+                        enableShippingAddress: false,
+                        enableBillingAddress: false,
+                        headless: true,
+                        locale: "{{$invoice->client->language?$invoice->client->language->locale:$invoice->account->language->locale}}"
+                    },
+                    dataCollector: {
+                        paypal: true
+                    },
+                    onPaymentMethodReceived: function (obj) {
+                        window.location.href = paypalUrl + '/' + encodeURIComponent(obj.nonce) + "?details=" + encodeURIComponent(JSON.stringify(obj.details))
+                    }
+                });
+                paypalLink.click(function(e){
+                    e.preventDefault();
+                    checkout.paypal.initAuthFlow();
+                })
+            });
+        </script>
+    @elseif(!empty($enableWePayACH))
+        <script type="text/javascript" src="https://static.wepay.com/js/tokenization.v2.js"></script>
+        <script type="text/javascript">
+            $(function() {
+                var achLink = $('.dropdown-menu a[href$="/wepay_ach"]'),
+                    achUrl = achLink.attr('href');
+                WePay.set_endpoint('{{ WEPAY_ENVIRONMENT }}');
+                achLink.click(function(e) {
+                    e.preventDefault();
+
+                    $('#wepay-error').remove();
+                    var email = {!! json_encode($contact->email) !!} || prompt('{{ trans('texts.ach_email_prompt') }}');
+                    if(!email)return;
+
+                    WePay.bank_account.create({
+                        'client_id': '{{ WEPAY_CLIENT_ID }}',
+                        'email':email
+                    }, function(data){
+                        dataObj = JSON.parse(data);
+                        if(dataObj.bank_account_id) {
+                            window.location.href = achLink.attr('href') + '/' + dataObj.bank_account_id + "?details=" + encodeURIComponent(data);
+                        } else if(dataObj.error) {
+                            $('#wepay-error').remove();
+                            achLink.closest('.container').prepend($('<div id="wepay-error" style="margin-top:20px" class="alert alert-danger"></div>').text(dataObj.error_description));
+                        }
+                    });
+                });
+            });
+        </script>
+    @endif
 @stop
 
 @section('content')
@@ -25,10 +99,7 @@
             @include('partials.checkout_com_payment')
         @else
             <div class="pull-right" style="text-align:right">
-            @if (Session::get('trackEventAction') === '/buy_pro_plan')
-                {!! Button::normal(trans('texts.download_pdf'))->withAttributes(['onclick' => 'onDownloadClick()'])->large() !!}&nbsp;&nbsp;
-                {!! Button::primary(trans('texts.return_to_app'))->asLinkTo(URL::to('/dashboard'))->large() !!}
-            @elseif ($invoice->is_quote)
+            @if ($invoice->isQuote())
                 {!! Button::normal(trans('texts.download_pdf'))->withAttributes(['onclick' => 'onDownloadClick()'])->large() !!}&nbsp;&nbsp;
                 @if ($showApprove)
                     {!! Button::success(trans('texts.approve'))->asLinkTo(URL::to('/approve/' . $invitation->invitation_key))->large() !!}
@@ -42,6 +113,9 @@
                 @endif
     		@else
     			{!! Button::normal(trans('texts.download_pdf'))->withAttributes(['onclick' => 'onDownloadClick()'])->large() !!}
+                @if ($account->isNinjaAccount())
+                    {!! Button::primary(trans('texts.return_to_app'))->asLinkTo(URL::to('/dashboard'))->large() !!}
+                @endif
     		@endif
     		</div>
     		<div class="pull-left">
@@ -90,7 +164,7 @@
                 remove_created_by:{{ $invoice->client->account->hasFeature(FEATURE_REMOVE_CREATED_BY) ? 'true' : 'false' }},
                 invoice_settings:{{ $invoice->client->account->hasFeature(FEATURE_INVOICE_SETTINGS) ? 'true' : 'false' }}
             };
-			invoice.is_quote = {{ $invoice->is_quote ? 'true' : 'false' }};
+			invoice.is_quote = {{ $invoice->isQuote() ? 'true' : 'false' }};
 			invoice.contact = {!! $contact->toJson() !!};
 
 			function getPDFString(cb) {

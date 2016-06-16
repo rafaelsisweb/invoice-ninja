@@ -230,6 +230,6 @@
         @if (Request::input('upgrade'))
           showChangePlan();
         @endif
-  	});
+    });
 </script>
 @stop

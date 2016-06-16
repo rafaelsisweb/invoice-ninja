@@ -99,6 +99,15 @@ class Expense extends EntityModel
 
         return $array;
     }
+
+    public function scopeBankId($query, $bankdId = null)
+    {
+        if ($bankdId) {
+            $query->whereBankId($bankId);
+        }
+
+        return $query;
+    }
 }
 
 Expense::creating(function ($expense) {

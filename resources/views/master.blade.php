@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="{{App::getLocale()}}">
 <head>
-    @if (isset($hideLogo) && $hideLogo)
+    @if (isset($account) && $account instanceof \App\Models\Account && $account->hasFeature(FEATURE_WHITE_LABEL))
         <title>{{ trans('texts.client_portal') }}</title>
     @else
         <title>{{ isset($title) ? ($title . ' | Invoice Ninja') : ('Invoice Ninja | ' . trans('texts.app_title')) }}</title>
@@ -9,7 +9,7 @@
         <link href="{{ asset('favicon-v2.png') }}" rel="shortcut icon" type="image/png">
     @endif
 
-    <!-- Source: https://github.com/hillelcoren/invoice-ninja -->
+    <!-- Source: https://github.com/invoiceninja/invoiceninja -->
     <!-- Version: {{ NINJA_VERSION }} -->
 
     <meta charset="utf-8">
@@ -19,11 +19,6 @@
     <meta property="og:image" content="{{ SITE_URL }}/images/round_logo.png" />
     <meta property="og:description" content="Simple, Intuitive Invoicing." />
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="msapplication-config" content="none"/>
-
     <!-- http://stackoverflow.com/questions/19012698/browser-cache-issues-in-laravel-4-application -->
     <meta http-equiv="cache-control" content="max-age=0" />
     <meta http-equiv="cache-control" content="no-cache" />
@@ -32,6 +27,11 @@
     <meta http-equiv="expires" content="0" />
     <meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT" />
     <meta http-equiv="pragma" content="no-cache" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="msapplication-config" content="none"/>
 
     <link rel="canonical" href="{{ NINJA_APP_URL }}/{{ Request::path() }}" />
 

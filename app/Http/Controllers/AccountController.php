@@ -1,5 +1,6 @@
 <?php namespace App\Http\Controllers;
 
+use App\Models\AccountGateway;
 use Auth;
 use File;
 use Image;
@@ -182,14 +183,7 @@ class AccountController extends BaseController
 
                     if ($account->company->payment) {
                         $payment = $account->company->payment;
-
-                        $gateway = $this->paymentService->createGateway($payment->account_gateway);
-                        $refund = $gateway->refund(array(
-                            'transactionReference' => $payment->transaction_reference,
-                            'amount' => $payment->amount
-                        ));
-                        $refund->send();
-                        $payment->delete();
+                        $this->paymentService->refund($payment);
                         Session::flash('message', trans('texts.plan_refunded'));
                         \Log::info("Refunded Plan Payment: {$account->name} - {$user->email}");
                     } else {
@@ -206,7 +200,7 @@ class AccountController extends BaseController
                 }
             }
 
-            if (!empty($new_plan) && $new_plan['plan'] != PLAN_FREE) {
+            if (!empty($new_plan)) {
                 $time_used = $planDetails['paid']->diff(date_create());
                 $days_used = $time_used->days;
 
@@ -236,7 +230,7 @@ class AccountController extends BaseController
             Session::flash('message', trans('texts.updated_plan'));
         }
 
-        if (!empty($new_plan)) {
+        if (!empty($new_plan) && $new_plan['plan'] != PLAN_FREE) {
             $invitation = $this->accountRepo->enablePlan($new_plan['plan'], $new_plan['term'], $credit, !empty($pending_monthly));
             return Redirect::to('view/'.$invitation->invitation_key);
         }
@@ -409,17 +403,9 @@ class AccountController extends BaseController
 
     private function showBankAccounts()
     {
-        $account = Auth::user()->account;
-        $account->load('bank_accounts');
-        $count = count($account->bank_accounts);
-
-        if ($count == 0) {
-            return Redirect::to('bank_accounts/create');
-        } else {
-            return View::make('accounts.banks', [
-                'title' => trans('texts.bank_accounts')
-            ]);
-        }
+        return View::make('accounts.banks', [
+            'title' => trans('texts.bank_accounts')
+        ]);
     }
 
     private function showOnlinePayments()
@@ -427,6 +413,7 @@ class AccountController extends BaseController
         $account = Auth::user()->account;
         $account->load('account_gateways');
         $count = count($account->account_gateways);
+        $trashedCount = AccountGateway::scope($account->id)->withTrashed()->count();
 
         if ($accountGateway = $account->getGatewayConfig(GATEWAY_STRIPE)) {
             if (! $accountGateway->getPublishableStripeKey()) {
@@ -434,12 +421,19 @@ class AccountController extends BaseController
             }
         }
 
-        if ($count == 0) {
+        if ($trashedCount == 0) {
             return Redirect::to('gateways/create');
         } else {
+            $tokenBillingOptions = [];
+            for ($i=1; $i<=4; $i++) {
+                $tokenBillingOptions[$i] = trans("texts.token_billing_{$i}");
+            }
+
             return View::make('accounts.payments', [
-                'showAdd' => $count < count(Gateway::$paymentTypes),
-                'title' => trans('texts.online_payments')
+                'showAdd' => $count < count(Gateway::$alternate) + 1,
+                'title' => trans('texts.online_payments'),
+                'tokenBillingOptions' => $tokenBillingOptions,
+                'account' => $account,
             ]);
         }
     }
@@ -596,8 +590,8 @@ class AccountController extends BaseController
 
             // sample invoice to help determine variables
             $invoice = Invoice::scope()
+                            ->invoiceType(INVOICE_TYPE_STANDARD)
                             ->with('client', 'account')
-                            ->where('is_quote', '=', false)
                             ->where('is_recurring', '=', false)
                             ->first();
 
@@ -667,6 +661,8 @@ class AccountController extends BaseController
             return AccountController::saveDetails();
         } elseif ($section === ACCOUNT_LOCALIZATION) {
             return AccountController::saveLocalization();
+        } elseif ($section == ACCOUNT_PAYMENTS) {
+            return self::saveOnlinePayments();
         } elseif ($section === ACCOUNT_NOTIFICATIONS) {
             return AccountController::saveNotifications();
         } elseif ($section === ACCOUNT_EXPORT) {
@@ -796,11 +792,7 @@ class AccountController extends BaseController
     private function saveTaxRates()
     {
         $account = Auth::user()->account;
-
-        $account->invoice_taxes = Input::get('invoice_taxes') ? true : false;
-        $account->invoice_item_taxes = Input::get('invoice_item_taxes') ? true : false;
-        $account->show_item_taxes = Input::get('show_item_taxes') ? true : false;
-        $account->default_tax_rate_id = Input::get('default_tax_rate_id');
+        $account->fill(Input::all());
         $account->save();
 
         Session::flash('message', trans('texts.updated_settings'));
@@ -976,7 +968,7 @@ class AccountController extends BaseController
             }
 
             $labels = [];
-            foreach (['item', 'description', 'unit_cost', 'quantity', 'line_total', 'terms', 'balance_due', 'partial_due'] as $field) {
+            foreach (['item', 'description', 'unit_cost', 'quantity', 'line_total', 'terms', 'balance_due', 'partial_due', 'subtotal', 'paid_to_date', 'discount'] as $field) {
                 $labels[$field] = Input::get("labels_{$field}");
             }
             $account->invoice_labels = json_encode($labels);
@@ -1141,6 +1133,20 @@ class AccountController extends BaseController
         Session::flash('message', trans('texts.updated_settings'));
 
         return Redirect::to('settings/'.ACCOUNT_LOCALIZATION);
+    }
+
+    private function saveOnlinePayments()
+    {
+        $account = Auth::user()->account;
+        $account->token_billing_type_id = Input::get('token_billing_type_id');
+        $account->auto_bill_on_due_date = boolval(Input::get('auto_bill_on_due_date'));
+        $account->save();
+
+        event(new UserSettingsChanged());
+
+        Session::flash('message', trans('texts.updated_settings'));
+
+        return Redirect::to('settings/'.ACCOUNT_PAYMENTS);
     }
 
     public function removeLogo()
