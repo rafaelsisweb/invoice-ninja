@@ -88,12 +88,12 @@ class Payment extends EntityModel
 
     public function isPending()
     {
-        return $this->payment_status_id = PAYMENT_STATUS_PENDING;
+        return $this->payment_status_id == PAYMENT_STATUS_PENDING;
     }
 
     public function isFailed()
     {
-        return $this->payment_status_id = PAYMENT_STATUS_FAILED;
+        return $this->payment_status_id == PAYMENT_STATUS_FAILED;
     }
 
     public function isCompleted()
@@ -162,7 +162,7 @@ class Payment extends EntityModel
         Event::fire(new PaymentCompleted($this));
     }
 
-    public function markFailed($failureMessage)
+    public function markFailed($failureMessage = '')
     {
         $this->payment_status_id = PAYMENT_STATUS_FAILED;
         $this->gateway_error = $failureMessage;

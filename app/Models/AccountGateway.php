@@ -37,18 +37,24 @@ class AccountGateway extends EntityModel
         return $arrayOfImages;
     }
 
-    public function paymentDriver($invitation = false, $gatewayType = false)
+    public static function paymentDriverClass($provider)
     {
         $folder = "App\\Ninja\\PaymentDrivers\\";
-        $class = $folder . $this->gateway->provider . 'PaymentDriver';
+        $class = $folder . $provider . 'PaymentDriver';
         $class = str_replace('_', '', $class);
 
         if (class_exists($class)) {
-            return new $class($this, $invitation, $gatewayType);
+            return $class;
         } else {
-            $baseClass = $folder . "BasePaymentDriver";
-            return new $baseClass($this, $invitation, $gatewayType);
+            return $folder . "BasePaymentDriver";
         }
+    }
+
+    public function paymentDriver($invitation = false, $gatewayType = false)
+    {
+        $class = static::paymentDriverClass($this->gateway->provider);
+
+        return new $class($this, $invitation, $gatewayType);
     }
 
     public function isGateway($gatewayId)
@@ -137,6 +143,6 @@ class AccountGateway extends EntityModel
     {
         $account = $this->account ? $this->account : Account::find($this->account_id);
 
-        return \URL::to(env('WEBHOOK_PREFIX','').'paymenthook/'.$account->account_key.'/'.$this->gateway_id.env('WEBHOOK_SUFFIX',''));
+        return \URL::to(env('WEBHOOK_PREFIX','').'payment_hook/'.$account->account_key.'/'.$this->gateway_id.env('WEBHOOK_SUFFIX',''));
     }
 }
