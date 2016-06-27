@@ -7,6 +7,8 @@ use Exception;
 
 class WePayPaymentDriver extends BasePaymentDriver
 {
+    protected $sourceReferenceParam = 'accessToken';
+
     public function gatewayTypes()
     {
         $types =  [
@@ -72,7 +74,7 @@ class WePayPaymentDriver extends BasePaymentDriver
         $data['feePayer'] = WEPAY_FEE_PAYER;
         $data['callbackUri'] = $this->accountGateway->getWebhookUrl();
 
-        if ($this->isGatewayType(GATEWAY_TYPE_BANK_TRANSFER)) {
+        if ($this->isGatewayType(GATEWAY_TYPE_BANK_TRANSFER, $paymentMethod)) {
             $data['paymentMethodType'] = 'payment_bank';
         }
 
@@ -208,7 +210,7 @@ class WePayPaymentDriver extends BasePaymentDriver
 
     private function calculateApplicationFee($amount)
     {
-        $fee = WEPAY_APP_FEE_MULTIPLIER * $amount + WEPAY_APP_FEE_FIXED;
+        $fee = (WEPAY_APP_FEE_MULTIPLIER * $amount) + WEPAY_APP_FEE_FIXED;
 
         return floor(min($fee, $amount * 0.2));// Maximum fee is 20% of the amount.
     }
