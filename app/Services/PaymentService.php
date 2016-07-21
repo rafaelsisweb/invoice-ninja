@@ -1,58 +1,83 @@
 <?php namespace App\Services;
 
+use App\Models\Invoice;
 use Utils;
 use Auth;
-use URL;
-use DateTime;
-use Event;
-use Cache;
-use Omnipay;
-use Session;
-use CreditCard;
-use WePay;
-use App\Models\Payment;
-use App\Models\PaymentMethod;
 use App\Models\Account;
-use App\Models\Country;
 use App\Models\Client;
-use App\Models\Invoice;
 use App\Models\Activity;
-use App\Models\AccountGateway;
-use App\Http\Controllers\PaymentController;
-use App\Models\AccountGatewayToken;
 use App\Ninja\Repositories\PaymentRepository;
 use App\Ninja\Repositories\AccountRepository;
-use App\Services\BaseService;
-use App\Events\PaymentWasCreated;
 use App\Ninja\Datatables\PaymentDatatable;
 
 class PaymentService extends BaseService
 {
-    protected $datatableService;
-
-    public function __construct(PaymentRepository $paymentRepo, AccountRepository $accountRepo, DatatableService $datatableService)
+    /**
+     * PaymentService constructor.
+     *
+     * @param PaymentRepository $paymentRepo
+     * @param AccountRepository $accountRepo
+     * @param DatatableService $datatableService
+     */
+    public function __construct(
+        PaymentRepository $paymentRepo,
+        AccountRepository $accountRepo,
+        DatatableService $datatableService
+    )
     {
         $this->datatableService = $datatableService;
         $this->paymentRepo = $paymentRepo;
         $this->accountRepo = $accountRepo;
     }
 
+    /**
+     * @return PaymentRepository
+     */
     protected function getRepo()
     {
         return $this->paymentRepo;
     }
 
-    public function autoBillInvoice($invoice)
+    /**
+     * @param Invoice $invoice
+     * @return bool
+     */
+    public function autoBillInvoice(Invoice $invoice)
     {
+        /** @var \App\Models\Client $client */
         $client = $invoice->client;
+
+        /** @var \App\Models\Account $account */
         $account = $client->account;
+
+        /** @var \App\Models\Invitation $invitation */
         $invitation = $invoice->invitations->first();
 
         if ( ! $invitation) {
             return false;
         }
 
+        if ($credits = $client->credits->sum('balance')) {
+            $balance = $invoice->balance;
+            $amount = min($credits, $balance);
+            $data = [
+                'payment_type_id' => PAYMENT_TYPE_CREDIT,
+                'invoice_id' => $invoice->id,
+                'client_id' => $client->id,
+                'amount' => $amount,
+            ];
+            $payment = $this->paymentRepo->save($data);
+            if ($amount == $balance) {
+                return $payment;
+            }
+        }
+
         $paymentDriver = $account->paymentDriver($invitation, GATEWAY_TYPE_TOKEN);
+
+        if ( ! $paymentDriver) {
+            return false;
+        }
+
         $customer = $paymentDriver->customer();
 
         if ( ! $customer) {
@@ -95,14 +120,7 @@ class PaymentService extends BaseService
             }
         }
 
-
         return $paymentDriver->completeOnsitePurchase(false, $paymentMethod);
-
-        /*
-        if ($accountGateway->gateway_id == GATEWAY_WEPAY) {
-            $details['transaction_id'] = 'autobill_'.$invoice->id;
-        }
-        */
     }
 
     public function getDatatable($clientPublicId, $search)
@@ -118,7 +136,7 @@ class PaymentService extends BaseService
     }
 
 
-    public function bulk($ids, $action, $params = array())
+    public function bulk($ids, $action, $params = [])
     {
         if ($action == 'refund') {
             if ( ! $ids ) {
@@ -144,5 +162,4 @@ class PaymentService extends BaseService
             return parent::bulk($ids, $action);
         }
     }
-
 }

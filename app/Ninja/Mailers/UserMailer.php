@@ -1,14 +1,21 @@
-<?php namespace App\Ninja\Mailers;
+<?php
 
-use Utils;
+namespace App\Ninja\Mailers;
 
 use App\Models\Invitation;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
 
+/**
+ * Class UserMailer
+ */
 class UserMailer extends Mailer
 {
+    /**
+     * @param User $user
+     * @param User|null $invitor
+     */
     public function sendConfirmation(User $user, User $invitor = null)
     {
         if (!$user->email) {
@@ -34,7 +41,18 @@ class UserMailer extends Mailer
         $this->sendTo($user->email, $fromEmail, $fromName, $subject, $view, $data);
     }
 
-    public function sendNotification(User $user, Invoice $invoice, $notificationType, Payment $payment = null)
+    /**
+     * @param User $user
+     * @param Invoice $invoice
+     * @param $notificationType
+     * @param Payment|null $payment
+     */
+    public function sendNotification(
+        User $user,
+        Invoice $invoice,
+        $notificationType,
+        Payment $payment = null
+    )
     {
         if (! $user->email || $user->cannot('view', $invoice)) {
             return;
@@ -69,6 +87,9 @@ class UserMailer extends Mailer
         $this->sendTo($user->email, CONTACT_EMAIL, CONTACT_NAME, $subject, $view, $data);
     }
 
+    /**
+     * @param Invitation $invitation
+     */
     public function sendEmailBounced(Invitation $invitation)
     {
         $user = $invitation->user;

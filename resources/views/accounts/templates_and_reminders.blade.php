@@ -4,7 +4,7 @@
     @parent
 
     @include('money_script')
-    <link href="{{ asset('css/quill.snow.css') }}" rel="stylesheet" type="text/css"/>
+    <link href="{{ asset('css/quill.snow.min.css') }}" rel="stylesheet" type="text/css"/>
     <script src="{{ asset('js/quill.min.js') }}" type="text/javascript"></script>
 
     <style type="text/css">
@@ -267,6 +267,8 @@
                 "{{ URL::to('/payment/...') }}$password",
                 '{!! Form::flatButton('pay_now', '#36c157') !!}$password',
                 '{{ trans('texts.auto_bill_notification_placeholder') }}',
+                "{{ URL::to('/client/portal/...') }}",
+                '{!! Form::flatButton('view_portal', '#36c157') !!}',
             ];
 
             // Add blanks for custom values

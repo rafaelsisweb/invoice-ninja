@@ -1,6 +1,5 @@
 <?php namespace App\Ninja\Presenters;
 
-use URL;
 use Utils;
 
 class InvoicePresenter extends EntityPresenter {
@@ -65,7 +64,9 @@ class InvoicePresenter extends EntityPresenter {
 
     public function frequency()
     {
-        return $this->entity->frequency ? $this->entity->frequency->name : '';
+        $frequency = $this->entity->frequency ? $this->entity->frequency->name : '';
+        $frequency = strtolower($frequency);
+        return trans('texts.freq_'.$frequency);
     }
 
     public function email()

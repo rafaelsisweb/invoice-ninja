@@ -1,13 +1,19 @@
-<?php namespace App\Ninja\Datatables;
+<?php
+
+namespace App\Ninja\Datatables;
 
 use Utils;
-use URL;
-use Auth;
 
+/**
+ * Class ActivityDatatable
+ */
 class ActivityDatatable extends EntityDatatable
 {
     public $entityType = ENTITY_ACTIVITY;
 
+    /**
+     * @return array
+     */
     public function columns()
     {
         return [

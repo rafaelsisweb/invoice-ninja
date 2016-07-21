@@ -1,37 +1,64 @@
 <?php namespace App\Services;
 
+use App\Models\Invoice;
 use Auth;
 use Utils;
-use URL;
-use App\Services\BaseService;
 use App\Ninja\Repositories\InvoiceRepository;
 use App\Ninja\Repositories\ClientRepository;
 use App\Events\QuoteInvitationWasApproved;
 use App\Models\Invitation;
-use App\Models\Invoice;
 use App\Models\Client;
-use App\Models\Payment;
 use App\Ninja\Datatables\InvoiceDatatable;
 
 class InvoiceService extends BaseService
 {
+    /**
+     * @var ClientRepository
+     */
     protected $clientRepo;
+
+    /**
+     * @var InvoiceRepository
+     */
     protected $invoiceRepo;
+
+    /**
+     * @var DatatableService
+     */
     protected $datatableService;
 
-    public function __construct(ClientRepository $clientRepo, InvoiceRepository $invoiceRepo, DatatableService $datatableService)
+    /**
+     * InvoiceService constructor.
+     *
+     * @param ClientRepository $clientRepo
+     * @param InvoiceRepository $invoiceRepo
+     * @param DatatableService $datatableService
+     */
+    public function __construct(
+        ClientRepository $clientRepo,
+        InvoiceRepository $invoiceRepo,
+        DatatableService $datatableService
+    )
     {
         $this->clientRepo = $clientRepo;
         $this->invoiceRepo = $invoiceRepo;
         $this->datatableService = $datatableService;
     }
 
+    /**
+     * @return InvoiceRepository
+     */
     protected function getRepo()
     {
         return $this->invoiceRepo;
     }
 
-    public function save($data, $invoice = null)
+    /**
+     * @param array $data
+     * @param Invoice|null $invoice
+     * @return \App\Models\Invoice|Invoice|mixed
+     */
+    public function save(array $data, Invoice $invoice = null)
     {
         if (isset($data['client'])) {
             $canSaveClient = false;
@@ -81,45 +108,44 @@ class InvoiceService extends BaseService
         return $invoice;
     }
 
-    public function convertQuote($quote, $invitation = null)
+    /**
+     * @param $quote
+     * @param Invitation|null $invitation
+     * @return mixed
+     */
+    public function convertQuote($quote)
     {
-        $invoice = $this->invoiceRepo->cloneInvoice($quote, $quote->id);
-        if (!$invitation) {
-            return $invoice;
-        }
-
-        foreach ($invoice->invitations as $invoiceInvitation) {
-            if ($invitation->contact_id == $invoiceInvitation->contact_id) {
-                return $invoiceInvitation->invitation_key;
-            }
-        }
+        return $this->invoiceRepo->cloneInvoice($quote, $quote->id);
     }
 
-    public function approveQuote($quote, $invitation = null)
+    /**
+     * @param $quote
+     * @param Invitation|null $invitation
+     * @return mixed|null
+     */
+    public function approveQuote($quote, Invitation $invitation = null)
     {
         $account = $quote->account;
 
-        if (!$quote->isType(INVOICE_TYPE_QUOTE) || $quote->quote_invoice_id) {
+        if ( ! $account->hasFeature(FEATURE_QUOTES) || ! $quote->isType(INVOICE_TYPE_QUOTE) || $quote->quote_invoice_id) {
             return null;
         }
 
-        if ($account->auto_convert_quote || ! $account->hasFeature(FEATURE_QUOTES)) {
-            $invoice = $this->convertQuote($quote, $invitation);
+        if ($account->auto_convert_quote) {
+            $invoice = $this->convertQuote($quote);
 
-            event(new QuoteInvitationWasApproved($quote, $invoice, $invitation));
-
-            return $invoice;
-        } else {
-            $quote->markApproved();
-
-            event(new QuoteInvitationWasApproved($quote, null, $invitation));
-
-            foreach ($quote->invitations as $invoiceInvitation) {
+            foreach ($invoice->invitations as $invoiceInvitation) {
                 if ($invitation->contact_id == $invoiceInvitation->contact_id) {
-                    return $invoiceInvitation->invitation_key;
+                    $invitation = $invoiceInvitation;
                 }
             }
+        } else {
+            $quote->markApproved();
         }
+
+        event(new QuoteInvitationWasApproved($quote, $invitation));
+
+        return $invitation->invitation_key;
     }
 
     public function getDatatable($accountId, $clientPublicId = null, $entityType, $search)

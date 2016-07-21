@@ -115,7 +115,7 @@
     		@else
     			{!! Button::normal(trans('texts.download_pdf'))->withAttributes(['onclick' => 'onDownloadClick()'])->large() !!}
                 @if ($account->isNinjaAccount())
-                    {!! Button::primary(trans('texts.return_to_app'))->asLinkTo(URL::to('/dashboard'))->large() !!}
+                    {!! Button::primary(trans('texts.return_to_app'))->asLinkTo(URL::to('/settings/account_management'))->large() !!}
                 @endif
     		@endif
     		</div>
@@ -203,7 +203,6 @@
 
 		@include('invoices.pdf', ['account' => $invoice->client->account, 'viewPDF' => true])
 
-		<p>&nbsp;</p>
 		<p>&nbsp;</p>
 
 	</div>

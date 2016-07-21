@@ -1,28 +1,47 @@
-<?php namespace App\Console\Commands;
+<?php
 
-use stdClass;
+namespace App\Console\Commands;
+
+use App\Models\Vendor;
 use Auth;
-use DB;
 use Utils;
-use Artisan;
 use Illuminate\Console\Command;
 use Faker\Factory;
-use App\Models\User;
-
 use App\Ninja\Repositories\ClientRepository;
 use App\Ninja\Repositories\InvoiceRepository;
 use App\Ninja\Repositories\PaymentRepository;
 use App\Ninja\Repositories\VendorRepository;
 use App\Ninja\Repositories\ExpenseRepository;
 
+/**
+ * Class CreateTestData
+ */
 class CreateTestData extends Command
 {
     //protected $name = 'ninja:create-test-data';
+    /**
+     * @var string
+     */
     protected $description = 'Create Test Data';
+    /**
+     * @var string
+     */
     protected $signature = 'ninja:create-test-data {count=1}';
 
+    /**
+     * @var
+     */
     protected $token;
 
+    /**
+     * CreateTestData constructor.
+     *
+     * @param ClientRepository $clientRepo
+     * @param InvoiceRepository $invoiceRepo
+     * @param PaymentRepository $paymentRepo
+     * @param VendorRepository $vendorRepo
+     * @param ExpenseRepository $expenseRepo
+     */
     public function __construct(
         ClientRepository $clientRepo, 
         InvoiceRepository $invoiceRepo, 
@@ -41,6 +60,9 @@ class CreateTestData extends Command
         $this->expenseRepo = $expenseRepo;
     }
 
+    /**
+     * @return bool
+     */
     public function fire()
     {
         if (Utils::isNinjaProd()) {
@@ -83,6 +105,9 @@ class CreateTestData extends Command
         }
     }
 
+    /**
+     * @param $client
+     */
     private function createInvoices($client)
     {   
         for ($i=0; $i<$this->count; $i++) {
@@ -102,8 +127,12 @@ class CreateTestData extends Command
             $this->createPayment($client, $invoice);
         }
     }
-    
-    private function createPayment($client, $invoice)
+
+    /**
+     * @param $client
+     * @param Invoice $invoice
+     */
+    private function createPayment($client, Invoice $invoice)
     {
         $data = [
             'invoice_id' => $invoice->id,
@@ -115,7 +144,7 @@ class CreateTestData extends Command
         
         $this->info('Payment: ' . $payment->amount);
     }
-
+    
     private function createVendors()
     {
         for ($i=0; $i<$this->count; $i++) {
@@ -140,8 +169,11 @@ class CreateTestData extends Command
             $this->createExpense($vendor);
         }
     }
-    
-    private function createExpense($vendor)
+
+    /**
+     * @param Vendor $vendor
+     */
+    private function createExpense(Vendor $vendor)
     {
         for ($i=0; $i<$this->count; $i++) {
             $data = [
@@ -156,17 +188,19 @@ class CreateTestData extends Command
         }
     }
 
+    /**
+     * @return array
+     */
     protected function getArguments()
     {
-        return array(
-            //array('example', InputArgument::REQUIRED, 'An example argument.'),
-        );
+        return [];
     }
 
+    /**
+     * @return array
+     */
     protected function getOptions()
     {
-        return array(
-            //array('example', null, InputOption::VALUE_OPTIONAL, 'An example option.', null),
-        );
+        return [];
     }
 }

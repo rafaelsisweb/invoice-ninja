@@ -1,4 +1,6 @@
-<?php namespace App\Ninja\Repositories;
+<?php
+
+namespace App\Ninja\Repositories;
 
 use DB;
 use Auth;
@@ -6,9 +8,22 @@ use Utils;
 use Request;
 use App\Models\Activity;
 use App\Models\Client;
+use App\Models\Invitation;
 
+/**
+ * Class ActivityRepository
+ */
 class ActivityRepository
 {
+    /**
+     * @param $entity
+     * @param $activityTypeId
+     * @param int $balanceChange
+     * @param int $paidToDateChange
+     * @param null $altEntity
+     * 
+     * @return Activity|mixed
+     */
     public function create($entity, $activityTypeId, $balanceChange = 0, $paidToDateChange = 0, $altEntity = null)
     {
         if ($entity instanceof Client) {
@@ -20,14 +35,14 @@ class ActivityRepository
         }
 
         // init activity and copy over context
-        $activity = self::getBlank($altEntity ?: $client);
+        $activity = self::getBlank($altEntity ?: ($client ?: $entity));
         $activity = Utils::copyContext($activity, $entity);
         $activity = Utils::copyContext($activity, $altEntity);
 
-        $activity->client_id = $client->id;
         $activity->activity_type_id = $activityTypeId;
         $activity->adjustment = $balanceChange;
-        $activity->balance = $client->balance + $balanceChange;
+        $activity->client_id = $client ? $client->id : 0;
+        $activity->balance = $client ? ($client->balance + $balanceChange) : 0;
 
         $keyField = $entity->getKeyField();
         $activity->$keyField = $entity->id;
@@ -35,11 +50,18 @@ class ActivityRepository
         $activity->ip = Request::getClientIp();
         $activity->save();
 
-        $client->updateBalances($balanceChange, $paidToDateChange);
+        if ($client) {
+            $client->updateBalances($balanceChange, $paidToDateChange);
+        }
 
         return $activity;
     }
 
+    /**
+     * @param $entity
+     *
+     * @return Activity
+     */
     private function getBlank($entity)
     {
         $activity = new Activity();
@@ -61,6 +83,11 @@ class ActivityRepository
         return $activity;
     }
 
+    /**
+     * @param $clientId
+     *
+     * @return $this
+     */
     public function findByClientId($clientId)
     {
         return DB::table('activities')

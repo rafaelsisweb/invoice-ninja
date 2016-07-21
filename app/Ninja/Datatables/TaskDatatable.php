@@ -1,15 +1,22 @@
-<?php namespace App\Ninja\Datatables;
+<?php
+
+namespace App\Ninja\Datatables;
 
 use Utils;
 use URL;
 use Auth;
-
 use App\Models\Task;
 
+/**
+ * Class TaskDatatable
+ */
 class TaskDatatable extends EntityDatatable
 {
     public $entityType = ENTITY_TASK;
 
+    /**
+     * @return array
+     */
     public function columns()
     {
         return [
@@ -51,6 +58,9 @@ class TaskDatatable extends EntityDatatable
         ];
     }
 
+    /**
+     * @return array
+     */
     public function actions()
     {
         return [
@@ -93,16 +103,26 @@ class TaskDatatable extends EntityDatatable
         ];
     }
 
+    /**
+     * @param $model
+     * 
+     * @return string
+     */
     private function getStatusLabel($model)
     {
         if ($model->invoice_number) {
-            $class = 'success';
-            $label = trans('texts.invoiced');
+            if (floatval($model->balance)) {
+                $label = trans('texts.invoiced');
+                $class = 'default';
+            } else {
+                $class = 'success';
+                $label = trans('texts.paid');
+            }
         } elseif ($model->is_running) {
             $class = 'primary';
             $label = trans('texts.running');
         } else {
-            $class = 'default';
+            $class = 'warning';
             $label = trans('texts.logged');
         }
 

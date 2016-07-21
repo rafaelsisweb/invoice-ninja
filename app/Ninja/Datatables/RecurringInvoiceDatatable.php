@@ -1,20 +1,30 @@
-<?php namespace App\Ninja\Datatables;
+<?php
+
+namespace App\Ninja\Datatables;
 
 use Utils;
 use URL;
 use Auth;
 
+/**
+ * Class RecurringInvoiceDatatable
+ */
 class RecurringInvoiceDatatable extends EntityDatatable
 {
     public $entityType = ENTITY_RECURRING_INVOICE;
 
+    /**
+     * @return array
+     */
     public function columns()
     {
         return [
             [
                 'frequency',
                 function ($model) {
-                    return link_to("invoices/{$model->public_id}", $model->frequency)->toHtml();
+                    $frequency = strtolower($model->frequency);
+                    $frequency = preg_replace('/\s/', '_', $frequency);
+                    return link_to("invoices/{$model->public_id}", trans('texts.freq_'.$frequency))->toHtml();
                 }
             ],
             [
@@ -45,6 +55,9 @@ class RecurringInvoiceDatatable extends EntityDatatable
         ];
     }
 
+    /**
+     * @return array
+     */
     public function actions()
     {
         return [
@@ -59,5 +72,4 @@ class RecurringInvoiceDatatable extends EntityDatatable
             ]
         ];
     }
-
 }

@@ -1,18 +1,29 @@
-<?php namespace App\Ninja\Repositories;
+<?php
+
+namespace App\Ninja\Repositories;
 
 use DB;
-use Utils;
 use Session;
 use App\Models\Token;
-use App\Ninja\Repositories\BaseRepository;
 
+/**
+ * Class TokenRepository
+ */
 class TokenRepository extends BaseRepository
 {
+    /**
+     * @return string
+     */
     public function getClassName()
     {
         return 'App\Models\AccountToken';
     }
 
+    /**
+     * @param $userId
+     * 
+     * @return $this
+     */
     public function find($userId)
     {
         $query = DB::table('account_tokens')

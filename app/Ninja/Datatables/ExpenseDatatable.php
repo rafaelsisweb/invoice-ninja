@@ -1,13 +1,21 @@
-<?php namespace App\Ninja\Datatables;
+<?php
+
+namespace App\Ninja\Datatables;
 
 use Utils;
 use URL;
 use Auth;
 
+/**
+ * Class ExpenseDatatable
+ */
 class ExpenseDatatable extends EntityDatatable
 {
     public $entityType = ENTITY_EXPENSE;
 
+    /**
+     * @return array
+     */
     public function columns()
     {
         return [
@@ -67,6 +75,12 @@ class ExpenseDatatable extends EntityDatatable
                 }
             ],
             [
+                'category',
+                function ($model) {
+                    return $model->category != null ? substr($model->category, 0, 100) : '';
+                }
+            ],
+            [
                 'public_notes',
                 function ($model) {
                     return $model->public_notes != null ? substr($model->public_notes, 0, 100) : '';
@@ -75,12 +89,15 @@ class ExpenseDatatable extends EntityDatatable
             [
                 'expense_status_id',
                 function ($model) {
-                    return self::getStatusLabel($model->invoice_id, $model->should_be_invoiced);
+                    return self::getStatusLabel($model->invoice_id, $model->should_be_invoiced, $model->balance);
                 }
             ],
         ];
     }
 
+    /**
+     * @return array
+     */
     public function actions()
     {
         return [
@@ -114,12 +131,23 @@ class ExpenseDatatable extends EntityDatatable
         ];
     }
 
-
-    private function getStatusLabel($invoiceId, $shouldBeInvoiced)
+    /**
+     * @param $invoiceId
+     * @param $shouldBeInvoiced
+     * @param $balance
+     *
+     * @return string
+     */
+    private function getStatusLabel($invoiceId, $shouldBeInvoiced, $balance)
     {
         if ($invoiceId) {
-            $label = trans('texts.invoiced');
-            $class = 'success';
+            if (floatval($balance)) {
+                $label = trans('texts.invoiced');
+                $class = 'default';
+            } else {
+                $label = trans('texts.paid');
+                $class = 'success';
+            }
         } elseif ($shouldBeInvoiced) {
             $label = trans('texts.pending');
             $class = 'warning';
@@ -130,5 +158,4 @@ class ExpenseDatatable extends EntityDatatable
 
         return "<h4><div class=\"label label-{$class}\">$label</div></h4>";
     }
-
 }

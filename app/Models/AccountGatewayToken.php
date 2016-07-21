@@ -3,34 +3,68 @@
 use Eloquent;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * Class AccountGatewayToken
+ */
 class AccountGatewayToken extends Eloquent
 {
     use SoftDeletes;
+    /**
+     * @var array
+     */
     protected $dates = ['deleted_at'];
+    /**
+     * @var bool
+     */
     public $timestamps = true;
 
+    /**
+     * @var array
+     */
     protected $casts = [];
 
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
     public function payment_methods()
     {
         return $this->hasMany('App\Models\PaymentMethod');
     }
 
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function account_gateway()
     {
         return $this->belongsTo('App\Models\AccountGateway');
     }
 
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
     public function default_payment_method()
     {
         return $this->hasOne('App\Models\PaymentMethod', 'id', 'default_payment_method_id');
     }
 
+    /**
+     * @return mixed
+     */
     public function autoBillLater()
     {
-        return $this->default_payment_method->requiresDelayedAutoBill();
+        if ($this->default_payment_method) {
+            return $this->default_payment_method->requiresDelayedAutoBill();
+        }
+
+        return false;
     }
 
+    /**
+     * @param $query
+     * @param $clientId
+     * @param $accountGatewayId
+     * @return mixed
+     */
     public function scopeClientAndGateway($query, $clientId, $accountGatewayId)
     {
         $query->where('client_id', '=', $clientId)
@@ -39,11 +73,17 @@ class AccountGatewayToken extends Eloquent
         return $query;
     }
 
+    /**
+     * @return mixed
+     */
     public function gatewayName()
     {
         return $this->account_gateway->gateway->name;
     }
 
+    /**
+     * @return bool|string
+     */
     public function gatewayLink()
     {
         $accountGateway = $this->account_gateway;
