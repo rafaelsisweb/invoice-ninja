@@ -1,17 +1,11 @@
 <?php namespace App\Http\Controllers;
 
-use Datatable;
-use Input;
-use Redirect;
-use Session;
-use URL;
 use Utils;
+use Redirect;
 use View;
-use Validator;
 use Response;
 use App\Models\Document;
 use App\Ninja\Repositories\DocumentRepository;
-
 use App\Http\Requests\DocumentRequest;
 use App\Http\Requests\CreateDocumentRequest;
 use App\Http\Requests\UpdateDocumentRequest;
@@ -64,7 +58,7 @@ class DocumentController extends BaseController
         $document = $request->entity();
 
         if(empty($document->preview)){
-            return Response::view('error', array('error'=>'Preview does not exist!'), 404);
+            return Response::view('error', ['error'=>'Preview does not exist!'], 404);
         }
 
         $direct_url = $document->getDirectPreviewUrl();
@@ -88,7 +82,7 @@ class DocumentController extends BaseController
         }
 
         if(!$document->isPDFEmbeddable()){
-            return Response::view('error', array('error'=>'Image does not exist!'), 404);
+            return Response::view('error', ['error'=>'Image does not exist!'], 404);
         }
 
         $content = $document->preview?$document->getRawPreview():$document->getRaw();
@@ -102,6 +96,10 @@ class DocumentController extends BaseController
 
     public function postUpload(CreateDocumentRequest $request)
     {
+        if (!Utils::hasFeature(FEATURE_DOCUMENTS)) {
+            return;
+        }
+
         $result = $this->documentRepo->upload($request->all(), $doc_array);
 
         if(is_string($result)){

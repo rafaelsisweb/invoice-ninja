@@ -1,21 +1,32 @@
-<?php namespace App\Ninja\Datatables;
+<?php
 
+namespace App\Ninja\Datatables;
+
+use App\Models\Payment;
 use Utils;
 use URL;
 use Auth;
-
 use App\Models\PaymentMethod;
 
+/**
+ * Class PaymentDatatable
+ */
 class PaymentDatatable extends EntityDatatable
 {
     public $entityType = ENTITY_PAYMENT;
 
-    protected static $refundableGateways = array(
+    /**
+     * @var array
+     */
+    protected static $refundableGateways = [
         GATEWAY_STRIPE,
         GATEWAY_BRAINTREE,
         GATEWAY_WEPAY,
-    );
+    ];
 
+    /**
+     * @return array
+     */
     public function columns()
     {
         return [
@@ -43,7 +54,7 @@ class PaymentDatatable extends EntityDatatable
             [
                 'transaction_reference',
                 function ($model) {
-                    return $model->transaction_reference ? $model->transaction_reference : '<i>Manual entry</i>';
+                    return $model->transaction_reference ? $model->transaction_reference : '<i>'.trans('texts.manual_entry').'</i>';
                 }
             ],
             [
@@ -56,7 +67,7 @@ class PaymentDatatable extends EntityDatatable
                 'source',
                 function ($model) {
                     $code = str_replace(' ', '', strtolower($model->payment_type));
-                    $card_type = trans("texts.card_" . $code);
+                    $card_type = trans('texts.card_' . $code);
                     if ($model->payment_type_id != PAYMENT_TYPE_ACH) {
                         if($model->last4) {
                             $expiration = Utils::fromSqlDate($model->expiration, false)->format('m/y');
@@ -102,7 +113,9 @@ class PaymentDatatable extends EntityDatatable
         ];
     }
 
-
+    /**
+     * @return array
+     */
     public function actions()
     {
         return [
@@ -135,9 +148,14 @@ class PaymentDatatable extends EntityDatatable
         ];
     }
 
-    private function getStatusLabel($model)
+    /**
+     * @param Payment $model
+     *
+     * @return string
+     */
+    private function getStatusLabel(Payment $model)
     {
-        $label = trans("texts.status_" . strtolower($model->payment_status_name));
+        $label = trans('texts.status_' . strtolower($model->payment_status_name));
         $class = 'default';
         switch ($model->payment_status_id) {
             case PAYMENT_STATUS_PENDING:

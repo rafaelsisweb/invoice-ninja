@@ -1,13 +1,19 @@
-<?php namespace App\Ninja\Datatables;
+<?php
 
-use Utils;
+namespace App\Ninja\Datatables;
+
 use URL;
-use Auth;
 
+/**
+ * Class TaxRateDatatable
+ */
 class TaxRateDatatable extends EntityDatatable
 {
     public $entityType = ENTITY_TAX_RATE;
 
+    /**
+     * @return array
+     */
     public function columns()
     {
         return [
@@ -26,6 +32,9 @@ class TaxRateDatatable extends EntityDatatable
         ];
     }
 
+    /**
+     * @return array
+     */
     public function actions()
     {
         return [

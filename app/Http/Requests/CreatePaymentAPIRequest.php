@@ -27,17 +27,19 @@ class CreatePaymentAPIRequest extends PaymentRequest
                 'amount' => 'required',
             ];
         }
-        
-        $invoice = Invoice::scope($this->invoice_id)->firstOrFail();
+
+        $invoice = Invoice::scope($this->invoice_id)
+            ->invoices()
+            ->firstOrFail();
 
         $this->merge([
-            'invoice_id' => $invoice->id, 
+            'invoice_id' => $invoice->id,
             'client_id' => $invoice->client->id,
         ]);
-            
-        $rules = array(
+
+        $rules = [
             'amount' => "required|less_than:{$invoice->balance}|positive",
-        );
+        ];
 
         if ($this->payment_type_id == PAYMENT_TYPE_CREDIT) {
             $rules['payment_type_id'] = 'has_credit:' . $invoice->client->public_id . ',' . $this->amount;

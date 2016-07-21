@@ -1,16 +1,26 @@
-<?php namespace App\Ninja\Repositories;
+<?php
+
+namespace App\Ninja\Repositories;
 
 use DB;
 use App\Models\Product;
-use App\Ninja\Repositories\BaseRepository;
 
+/**
+ * Class ProductRepository
+ */
 class ProductRepository extends BaseRepository
 {
+    /**
+     * @return string
+     */
     public function getClassName()
     {
         return 'App\Models\Product';
     }
 
+    /**
+     * @return mixed
+     */
     public function all()
     {
         return Product::scope()
@@ -18,6 +28,11 @@ class ProductRepository extends BaseRepository
                 ->get();
     }
 
+    /**
+     * @param $accountId
+     *
+     * @return $this
+     */
     public function find($accountId)
     {
         return DB::table('products')
@@ -38,7 +53,13 @@ class ProductRepository extends BaseRepository
                 );
     }
 
-    public function save($data, $product = null)
+    /**
+     * @param array $data
+     * @param Product|null $product
+     * 
+     * @return Product|mixed
+     */
+    public function save(array $data, Product $product = null)
     {
         $publicId = isset($data['public_id']) ? $data['public_id'] : false;
 

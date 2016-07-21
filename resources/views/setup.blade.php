@@ -5,8 +5,8 @@
     <meta charset="utf-8">    
     <meta name="csrf-token" content="<?= csrf_token() ?>">
     <script src="{{ asset('built.js') }}?no_cache={{ NINJA_VERSION }}" type="text/javascript"></script>
-    <link href="{{ asset('css/built.public.css') }}?no_cache={{ NINJA_VERSION }}" rel="stylesheet" type="text/css"/>
-    <link href="{{ asset('css/built.css') }}?no_cache={{ NINJA_VERSION }}" rel="stylesheet" type="text/css"/>
+    <link href="{{ asset('css/built.public.min.css') }}?no_cache={{ NINJA_VERSION }}" rel="stylesheet" type="text/css"/>
+    <link href="{{ asset('css/built.min.css') }}?no_cache={{ NINJA_VERSION }}" rel="stylesheet" type="text/css"/>
     <link href="{{ asset('favicon.png?test') }}" rel="shortcut icon">
 
     <style type="text/css">
@@ -37,7 +37,7 @@
                 <pre>sudo chown www-data:www-data /path/to/ninja/.env</pre>
             </div>
         @endif
-        If you need help you can either post to our <a href="https://www.invoiceninja.com/forums/forum/support/" target="_blank">support forum</a> 
+        If you need help you can either post to our <a href="https://www.invoiceninja.com/forums/forum/support/" target="_blank">support forum</a> with the design you\'re using 
         or email us at <a href="mailto:contact@invoiceninja.com" target="_blank">contact@invoiceninja.com</a>.
         <p>
 <pre>-- Commands to create a MySQL database and user

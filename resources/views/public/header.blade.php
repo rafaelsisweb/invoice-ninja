@@ -6,7 +6,7 @@
     @else
     <link href="//fonts.googleapis.com/css?family=Roboto:400,700,900,100" rel="stylesheet" type="text/css">
     @endif
-    <link href="{{ asset('css/built.public.css') }}?no_cache={{ NINJA_VERSION }}" rel="stylesheet" type="text/css"/>
+    <link href="{{ asset('css/built.public.min.css') }}?no_cache={{ NINJA_VERSION }}" rel="stylesheet" type="text/css"/>
     <style type="text/css">{!! isset($account)?$account->clientViewCSS():'' !!}</style>
 @stop
 
@@ -84,7 +84,7 @@
             <div id="navbar" class="collapse navbar-collapse">
                 @if (!isset($account) || $account->isNinjaAccount() || $account->enable_client_portal)
                 <ul class="nav navbar-nav navbar-right">
-                    @if (!isset($account) || $account->enable_client_portal_dashboard)
+                    @if (isset($account) && $account->enable_client_portal_dashboard)
                         <li {{ Request::is('*client/dashboard') ? 'class="active"' : '' }}>
                             {!! link_to('/client/dashboard', trans('texts.dashboard') ) !!}
                         </li>

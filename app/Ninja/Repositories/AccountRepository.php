@@ -1,10 +1,11 @@
-<?php namespace App\Ninja\Repositories;
+<?php
+
+namespace App\Ninja\Repositories;
 
 use Auth;
 use Request;
 use Session;
 use Utils;
-use DB;
 use URL;
 use stdClass;
 use Validator;
@@ -14,6 +15,7 @@ use App\Models\Invitation;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Client;
+use App\Models\Credit;
 use App\Models\Language;
 use App\Models\Contact;
 use App\Models\Account;
@@ -22,6 +24,9 @@ use App\Models\User;
 use App\Models\UserAccount;
 use App\Models\AccountToken;
 
+/**
+ * Class AccountRepository
+ */
 class AccountRepository
 {
     public function create($firstName = '', $lastName = '', $email = '', $password = '')
@@ -177,6 +182,7 @@ class AccountRepository
             ENTITY_QUOTE,
             ENTITY_TASK,
             ENTITY_EXPENSE,
+            ENTITY_EXPENSE_CATEGORY,
             ENTITY_VENDOR,
             ENTITY_RECURRING_INVOICE,
             ENTITY_PAYMENT,
@@ -186,11 +192,11 @@ class AccountRepository
         foreach ($entityTypes as $entityType) {
             $features[] = [
                 "new_{$entityType}",
-                "/{$entityType}s/create",
+                Utils::pluralizeEntityType($entityType) . '/create'
             ];
             $features[] = [
-                "list_{$entityType}s",
-                "/{$entityType}s",
+                'list_' . Utils::pluralizeEntityType($entityType),
+                Utils::pluralizeEntityType($entityType)
             ];
         }
 
@@ -202,6 +208,7 @@ class AccountRepository
             ['new_user', '/users/create'],
             ['custom_fields', '/settings/invoice_settings'],
             ['invoice_number', '/settings/invoice_settings'],
+            ['buy_now_buttons', '/settings/client_portal#buyNow']
         ]);
 
         $settings = array_merge(Account::$basicSettings, Account::$advancedSettings);
@@ -228,22 +235,43 @@ class AccountRepository
         return $data;
     }
 
-    public function enablePlan($plan = PLAN_PRO, $term = PLAN_TERM_MONTHLY, $credit = 0, $pending_monthly = false)
+    public function enablePlan($plan, $credit = 0)
     {
         $account = Auth::user()->account;
         $client = $this->getNinjaClient($account);
-        $invitation = $this->createNinjaInvoice($client, $account, $plan, $term, $credit, $pending_monthly);
+        $invitation = $this->createNinjaInvoice($client, $account, $plan, $credit);
 
         return $invitation;
     }
 
-    public function createNinjaInvoice($client, $clientAccount, $plan = PLAN_PRO, $term = PLAN_TERM_MONTHLY, $credit = 0, $pending_monthly = false)
+    public function createNinjaCredit($client, $amount)
     {
+        $account = $this->getNinjaAccount();
+
+        $lastCredit = Credit::withTrashed()->whereAccountId($account->id)->orderBy('public_id', 'DESC')->first();
+        $publicId = $lastCredit ? ($lastCredit->public_id + 1) : 1;
+
+        $credit = new Credit();
+        $credit->public_id = $publicId;
+        $credit->account_id = $account->id;
+        $credit->user_id = $account->users()->first()->id;
+        $credit->client_id = $client->id;
+        $credit->amount = $amount;
+        $credit->save();
+
+        return $credit;
+    }
+
+    public function createNinjaInvoice($client, $clientAccount, $plan, $credit = 0)
+    {
+        $term = $plan['term'];
+        $plan_cost = $plan['price'];
+        $num_users = $plan['num_users'];
+        $plan = $plan['plan'];
+
         if ($credit < 0) {
             $credit = 0;
         }
-
-        $plan_cost = Account::$plan_prices[$plan][$term];
 
         $account = $this->getNinjaAccount();
         $lastInvoice = Invoice::withTrashed()->whereAccountId($account->id)->orderBy('public_id', 'DESC')->first();
@@ -272,22 +300,14 @@ class AccountRepository
         $item->cost = $plan_cost;
         $item->notes = trans("texts.{$plan}_plan_{$term}_description");
 
+        if ($plan == PLAN_ENTERPRISE) {
+            $min = Utils::getMinNumUsers($num_users);
+            $item->notes .= "\n\n###" . trans('texts.min_to_max_users', ['min' => $min, 'max' => $num_users]);
+        }
+
         // Don't change this without updating the regex in PaymentService->createPayment()
         $item->product_key = 'Plan - '.ucfirst($plan).' ('.ucfirst($term).')';
         $invoice->invoice_items()->save($item);
-
-        if ($pending_monthly) {
-            $term_end = $term == PLAN_MONTHLY ? date_create('+1 month') : date_create('+1 year');
-            $pending_monthly_item = InvoiceItem::createNew($invoice);
-            $item->qty = 1;
-            $pending_monthly_item->cost = 0;
-            $pending_monthly_item->notes = trans("texts.plan_pending_monthly", array('date', Utils::dateToString($term_end)));
-
-            // Don't change this without updating the text in PaymentService->createPayment()
-            $pending_monthly_item->product_key = 'Pending Monthly';
-            $invoice->invoice_items()->save($pending_monthly_item);
-        }
-
 
         $invitation = new Invitation();
         $invitation->account_id = $account->id;
@@ -623,7 +643,10 @@ class AccountRepository
         return $users;
     }
 
-    public function unlinkAccount($account) {
+    /**
+     * @param Account $account
+     */
+    public function unlinkAccount(Account $account) {
         foreach ($account->users as $user) {
             if ($userAccount = self::findUserAccounts($user->id)) {
                 $userAccount->removeUserId($user->id);
@@ -666,7 +689,11 @@ class AccountRepository
         return $code;
     }
 
-    public function createTokens($user, $name)
+    /**
+     * @param User $user
+     * @param $name
+     */
+    public function createTokens(User $user, $name)
     {
         $name = trim($name) ?: 'TOKEN';
         $users = $this->findUsers($user);
@@ -683,7 +710,12 @@ class AccountRepository
         }
     }
 
-    public function getUserAccountId($account)
+    /**
+     * @param Account $account
+     *
+     * @return bool|mixed
+     */
+    public function getUserAccountId(Account $account)
     {
         $user = $account->users()->first();
         $userAccount = $this->findUserAccounts($user->id);
@@ -691,7 +723,11 @@ class AccountRepository
         return $userAccount ? $userAccount->id : false;
     }
 
-    public function save($data, $account)
+    /**
+     * @param $data
+     * @param Account $account
+     */
+    public function save($data, Account $account)
     {
         $account->fill($data);
         $account->save();
