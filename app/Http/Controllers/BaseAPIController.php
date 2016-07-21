@@ -1,13 +1,10 @@
 <?php namespace App\Http\Controllers;
 
-use Session;
 use Utils;
 use Auth;
-use Log;
 use Input;
 use Response;
 use Request;
-use League\Fractal;
 use League\Fractal\Manager;
 use League\Fractal\Resource\Item;
 use League\Fractal\Resource\Collection;
@@ -15,7 +12,6 @@ use League\Fractal\Pagination\IlluminatePaginatorAdapter;
 use App\Models\EntityModel;
 use App\Ninja\Serializers\ArraySerializer;
 use League\Fractal\Serializer\JsonApiSerializer;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * @SWG\Swagger(
@@ -67,10 +63,6 @@ class BaseAPIController extends Controller
         } else {
             $this->manager->setSerializer(new ArraySerializer());
         }
-
-        if (Utils::isNinjaDev()) {
-            \DB::enableQueryLog();
-        }
     }
 
     protected function handleAction($request)
@@ -95,16 +87,8 @@ class BaseAPIController extends Controller
 
         $query->with($includes);
 
-        if ($updatedAt = Input::get('updated_at')) {
-            $updatedAt = date('Y-m-d H:i:s', $updatedAt);
-            $query->where(function($query) use ($includes, $updatedAt) {
-                $query->where('updated_at', '>=', $updatedAt);
-                foreach ($includes as $include) {
-                    $query->orWhereHas($include, function($query) use ($updatedAt) {
-                        $query->where('updated_at', '>=', $updatedAt);
-                    });
-                }
-            });
+        if ($updatedAt = intval(Input::get('updated_at'))) {
+            $query->where('updated_at', '>=', date('Y-m-d H:i:s', $updatedAt));
         }
 
         if ($clientPublicId = Input::get('client_id')) {
@@ -155,8 +139,10 @@ class BaseAPIController extends Controller
 
         if (is_a($query, "Illuminate\Database\Eloquent\Builder")) {
             $limit = min(MAX_API_PAGE_SIZE, Input::get('per_page', DEFAULT_API_PAGE_SIZE));
-            $resource = new Collection($query->get(), $transformer, $entityType);
-            $resource->setPaginator(new IlluminatePaginatorAdapter($query->paginate($limit)));
+            $paginator = $query->paginate($limit);
+            $query = $paginator->getCollection();
+            $resource = new Collection($query, $transformer, $entityType);
+            $resource->setPaginator(new IlluminatePaginatorAdapter($paginator));
         } else {
             $resource = new Collection($query, $transformer, $entityType);
         }
@@ -166,12 +152,6 @@ class BaseAPIController extends Controller
 
     protected function response($response)
     {
-        if (Utils::isNinjaDev()) {
-            $count = count(\DB::getQueryLog());
-            Log::info(Request::method() . ' - ' . Request::url() . ": $count queries");
-            Log::info(json_encode(\DB::getQueryLog()));
-        }
-
         $index = Request::get('index') ?: 'data';
 
         if ($index == 'none') {
