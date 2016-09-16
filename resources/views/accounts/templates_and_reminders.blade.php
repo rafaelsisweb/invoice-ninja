@@ -216,6 +216,8 @@
                 enableReminder(i);
             }
 
+            $('.show-when-ready').show();
+
             refreshPreview();
         });
 
@@ -301,7 +303,7 @@
         }
 
         function resetText(section, field) {
-            if (confirm('{!! trans("texts.are_you_sure") !!}')) {
+            sweetConfirm(function() {
                 var fieldName = 'email_' + section + '_' + field;
                 var value = templates[field][section];
                 $('#' + fieldName).val(value);
@@ -309,9 +311,7 @@
                     editors[field].setHTML(value);
                 }
                 refreshPreview();
-            }
-
-            return false;
+            });
         }
 
     </script>

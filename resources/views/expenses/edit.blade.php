@@ -26,7 +26,11 @@
 	@if ($expense)
 		{!! Former::populate($expense) !!}
         {!! Former::populateField('should_be_invoiced', intval($expense->should_be_invoiced)) !!}
-        {!! Former::hidden('public_id') !!}
+
+        <div style="display:none">
+            {!! Former::text('public_id') !!}
+            {!! Former::text('invoice_id') !!}
+        </div>
 	@endif
 
     <div class="panel panel-default">
@@ -206,7 +210,7 @@
 
         function onFormSubmit(event) {
             if (window.countUploadingDocuments > 0) {
-                alert("{!! trans('texts.wait_for_upload') !!}");
+                swal("{!! trans('texts.wait_for_upload') !!}");
                 return false;
             }
 
@@ -221,15 +225,16 @@
             }
         }
 
-        function submitAction(action) {
+        function submitAction(action, invoice_id) {
             $('#action').val(action);
+            $('#invoice_id').val(invoice_id);
             $('.main-form').submit();
         }
 
         function onDeleteClick() {
-            if (confirm('{!! trans("texts.are_you_sure") !!}')) {
+            sweetConfirm(function() {
                 submitAction('delete');
-            }
+            });
         }
 
         $(function() {
@@ -353,7 +358,7 @@
             self.amount = ko.observable();
             self.exchange_rate = ko.observable(1);
             self.should_be_invoiced = ko.observable();
-            self.convert_currency = ko.observable(false);
+            self.convert_currency = ko.observable({{ ($expense && $expense->isExchanged()) ? 'true' : 'false' }});
             self.apply_taxes = ko.observable({{ ($expense && ($expense->tax_name1 || $expense->tax_name2)) ? 'true' : 'false' }});
 
             self.mapping = {

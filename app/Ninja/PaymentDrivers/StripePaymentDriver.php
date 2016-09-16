@@ -39,6 +39,21 @@ class StripePaymentDriver extends BasePaymentDriver
         return $rules;
     }
 
+    public function isValid()
+    {
+        $result = $this->makeStripeCall(
+            'GET',
+            'charges',
+            'limit=1'
+        );
+
+        if (array_get($result, 'object') == 'list') {
+            return true;
+        } else {
+            return $result;
+        }
+    }
+
     protected function checkCustomerExists($customer)
     {
         $response = $this->gateway()
@@ -153,7 +168,9 @@ class StripePaymentDriver extends BasePaymentDriver
         $paymentMethod->source_reference = $source['id'];
         $paymentMethod->last4 = $source['last4'];
 
-        if ($this->isGatewayType(GATEWAY_TYPE_CREDIT_CARD)) {
+        // For older users the Stripe account may just have the customer token but not the card version
+        // In that case we'd use GATEWAY_TYPE_TOKEN even though we're creating the credit card
+        if ($this->isGatewayType(GATEWAY_TYPE_CREDIT_CARD) || $this->isGatewayType(GATEWAY_TYPE_TOKEN)) {
 
             $paymentMethod->expiration = $source['exp_year'] . '-' . $source['exp_month'] . '-01';
             $paymentMethod->payment_type_id = $this->parseCardType($source['brand']);
@@ -345,15 +362,15 @@ class StripePaymentDriver extends BasePaymentDriver
         $eventDetails = $this->makeStripeCall('GET', 'events/'.$eventId);
 
         if (is_string($eventDetails) || !$eventDetails) {
-            throw new Exception('Could not get event details');
+            return false;
         }
 
         if ($eventType != $eventDetails['type']) {
-            throw new Exception('Event type mismatch');
+            return false;
         }
 
         if (!$eventDetails['pending_webhooks']) {
-            throw new Exception('This is not a pending event');
+            return false;
         }
 
         if ($eventType == 'charge.failed' || $eventType == 'charge.succeeded' || $eventType == 'charge.refunded') {
@@ -363,7 +380,7 @@ class StripePaymentDriver extends BasePaymentDriver
             $payment = Payment::scope(false, $accountId)->where('transaction_reference', '=', $transactionRef)->first();
 
             if (!$payment) {
-                throw new Exception('Unknown payment');
+                return false;
             }
 
             if ($eventType == 'charge.failed') {
@@ -385,7 +402,7 @@ class StripePaymentDriver extends BasePaymentDriver
             $paymentMethod = PaymentMethod::scope(false, $accountId)->where('source_reference', '=', $sourceRef)->first();
 
             if (!$paymentMethod) {
-                throw new Exception('Unknown payment method');
+                return false;
             }
 
             if ($eventType == 'customer.source.deleted' || $eventType == 'customer.bank_account.deleted') {

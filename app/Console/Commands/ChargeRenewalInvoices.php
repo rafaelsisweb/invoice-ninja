@@ -6,6 +6,7 @@ use App\Ninja\Repositories\AccountRepository;
 use App\Services\PaymentService;
 use App\Models\Invoice;
 use App\Models\Account;
+use Exception;
 
 /**
  * Class ChargeRenewalInvoices
@@ -59,6 +60,7 @@ class ChargeRenewalInvoices extends Command
         $ninjaAccount = $this->accountRepo->getNinjaAccount();
         $invoices = Invoice::whereAccountId($ninjaAccount->id)
                         ->whereDueDate(date('Y-m-d'))
+                        ->where('balance', '>', 0)
                         ->with('client')
                         ->orderBy('id')
                         ->get();
@@ -67,15 +69,24 @@ class ChargeRenewalInvoices extends Command
 
         foreach ($invoices as $invoice) {
 
-            // check if account has switched to free since the invoice was created 
+            // check if account has switched to free since the invoice was created
             $account = Account::find($invoice->client->public_id);
+
+            if ( ! $account) {
+                continue;
+            }
+
             $company = $account->company;
             if ( ! $company->plan || $company->plan == PLAN_FREE) {
                 continue;
             }
 
-            $this->info("Charging invoice {$invoice->invoice_number}");
-            $this->paymentService->autoBillInvoice($invoice);
+            try {
+                $this->info("Charging invoice {$invoice->invoice_number}");
+                $this->paymentService->autoBillInvoice($invoice);
+            } catch (Exception $exception) {
+                $this->info('Error: ' . $exception->getMessage());
+            }
         }
 
         $this->info('Done');

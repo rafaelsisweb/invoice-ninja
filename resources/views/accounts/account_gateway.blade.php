@@ -50,7 +50,8 @@
         {!! Former::select('primary_gateway_id')
             ->fromQuery($primaryGateways, 'name', 'id')
             ->label(trans('texts.gateway_id'))
-            ->onchange('setFieldsShown()') !!}
+            ->onchange('setFieldsShown()')
+            ->help(count($secondaryGateways) ? false : 'limited_gateways') !!}
 
         @if (count($secondaryGateways))
             {!! Former::select('secondary_gateway_id')
@@ -165,6 +166,10 @@
                     ->help(trans('texts.plaid_environment_help')) !!}
             </div>
         </div>
+    @elseif ($accountGateway && $accountGateway->gateway_id == GATEWAY_WEPAY)
+            {!! Former::checkbox('enable_ach')
+                        ->label(trans('texts.ach'))
+                        ->text(trans('texts.enable_ach')) !!}
     @endif
 
     </div>

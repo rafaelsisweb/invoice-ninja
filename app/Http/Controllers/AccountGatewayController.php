@@ -60,6 +60,8 @@ class AccountGatewayController extends BaseController
         $data['hiddenFields'] = Gateway::$hiddenFields;
         $data['selectGateways'] = Gateway::where('id', '=', $accountGateway->gateway_id)->get();
 
+        $this->testGateway($accountGateway);
+
         return View::make('accounts.account_gateway', $data);
     }
 
@@ -202,7 +204,7 @@ class AccountGatewayController extends BaseController
         $validator = Validator::make(Input::all(), $rules);
 
         if ($validator->fails()) {
-            return Redirect::to('gateways/create')
+            return Redirect::to('gateways/create?other_providers=' . ($gatewayId == GATEWAY_WEPAY ? 'false' : 'true'))
                 ->withErrors($validator)
                 ->withInput();
         } else {
@@ -307,7 +309,7 @@ class AccountGatewayController extends BaseController
                 $account->account_gateways()->save($accountGateway);
             }
 
-            if(isset($wepayResponse)) {
+            if (isset($wepayResponse)) {
                 return $wepayResponse;
             } else {
                 if ($accountGatewayPublicId) {
@@ -319,6 +321,16 @@ class AccountGatewayController extends BaseController
                 Session::flash('message', $message);
                 return Redirect::to("gateways/{$accountGateway->public_id}/edit");
             }
+        }
+    }
+
+    private function testGateway($accountGateway)
+    {
+        $paymentDriver = $accountGateway->paymentDriver();
+        $result = $paymentDriver->isValid();
+
+        if ($result !== true) {
+            Session::flash('error', $result . ' - ' . trans('texts.gateway_config_error'));
         }
     }
 

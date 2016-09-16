@@ -233,6 +233,9 @@ function InvoiceModel(data) {
     }
 
     self.addItem = function() {
+        if (self.invoice_items().length >= {{ MAX_INVOICE_ITEMS }}) {
+            return false;
+        }
         var itemModel = new ItemModel();
         @if ($account->hide_quantity)
             itemModel.qty(1);
@@ -528,11 +531,11 @@ function InvoiceModel(data) {
     }
 
     self.showResetTerms = function() {
-        return self.default_terms() && self.terms() != self.default_terms();
+        return self.default_terms() && self.terms() && self.terms() != self.default_terms();
     }
 
     self.showResetFooter = function() {
-        return self.default_footer() && self.invoice_footer() != self.default_footer();
+        return self.default_footer() && self.invoice_footer() && self.invoice_footer() != self.default_footer();
     }
 }
 
@@ -894,5 +897,26 @@ ko.bindingHandlers.productTypeahead = {
         }
     }
 };
+
+function checkInvoiceNumber() {
+    var url = '{{ url('check_invoice_number') }}/' + $('#invoice_number').val();
+    $.get(url, function(data) {
+        var isValid = data == '{{ RESULT_SUCCESS }}' ? true : false;
+        if (isValid) {
+            $('.invoice-number')
+                .removeClass('has-error')
+                .find('span')
+                .hide();
+        } else {
+            if ($('.invoice-number').hasClass('has-error')) {
+                return;
+            }
+            $('.invoice-number')
+                .addClass('has-error')
+                .find('div')
+                .append('<span class="help-block">{{ trans('validation.unique', ['attribute' => trans('texts.invoice_number')]) }}</span>');
+        }
+    });
+}
 
 </script>
