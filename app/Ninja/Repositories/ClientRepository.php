@@ -1,29 +1,19 @@
-<?php
-
-namespace App\Ninja\Repositories;
+<?php namespace App\Ninja\Repositories;
 
 use DB;
 use Cache;
 use App\Models\Client;
+use App\Models\Contact;
 use App\Events\ClientWasCreated;
 use App\Events\ClientWasUpdated;
 
-/**
- * Class ClientRepository
- */
 class ClientRepository extends BaseRepository
 {
-    /**
-     * @return string
-     */
     public function getClassName()
     {
         return 'App\Models\Client';
     }
 
-    /**
-     * @return mixed
-     */
     public function all()
     {
         return Client::scope()
@@ -33,12 +23,6 @@ class ClientRepository extends BaseRepository
                 ->get();
     }
 
-    /**
-     * @param null $filter
-     * @param bool $userId
-     *
-     * @return $this
-     */
     public function find($filter = null, $userId = false)
     {
         $query = DB::table('clients')
@@ -84,13 +68,7 @@ class ClientRepository extends BaseRepository
         return $query;
     }
 
-    /**
-     * @param $data
-     * @param Client|null $client
-     * 
-     * @return Client|mixed
-     */
-    public function save($data, Client $client = null)
+    public function save($data, $client = null)
     {
         $publicId = isset($data['public_id']) ? $data['public_id'] : false;
 
@@ -116,6 +94,12 @@ class ClientRepository extends BaseRepository
 
         $client->fill($data);
         $client->save();
+
+        /*
+        if ( ! isset($data['contact']) && ! isset($data['contacts'])) {
+            return $client;
+        }
+        */
 
         $first = true;
         $contacts = isset($data['contact']) ? [$data['contact']] : $data['contacts'];
@@ -148,4 +132,48 @@ class ClientRepository extends BaseRepository
 
         return $client;
     }
+
+    public function findPhonetically($clientName)
+    {
+        $clientNameMeta = metaphone($clientName);
+
+        $map = [];
+        $max = SIMILAR_MIN_THRESHOLD;
+        $clientId = 0;
+
+        $clients = Client::scope()->get(['id', 'name', 'public_id']);
+
+        foreach ($clients as $client) {
+            $map[$client->id] = $client;
+
+            if ( ! $client->name) {
+                continue;
+            }
+
+            $similar = similar_text($clientNameMeta, metaphone($client->name), $percent);
+
+            if ($percent > $max) {
+                $clientId = $client->id;
+                $max = $percent;
+            }
+        }
+
+        $contacts = Contact::scope()->get(['client_id', 'first_name', 'last_name', 'public_id']);
+
+        foreach ($contacts as $contact) {
+            if ( ! $contact->getFullName() || ! isset($map[$contact->client_id])) {
+                continue;
+            }
+
+            $similar = similar_text($clientNameMeta, metaphone($contact->getFullName()), $percent);
+
+            if ($percent > $max) {
+                $clientId = $contact->client_id;
+                $max = $percent;
+            }
+        }
+
+        return ($clientId && isset($map[$clientId])) ? $map[$clientId] : null;
+    }
+
 }

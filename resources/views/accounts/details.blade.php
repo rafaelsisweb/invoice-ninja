@@ -3,7 +3,7 @@
 @section('head')
     @parent
 
-    <link href="{{ asset('css/quill.snow.min.css') }}" rel="stylesheet" type="text/css"/>
+    <link href="{{ asset('css/quill.snow.css') }}" rel="stylesheet" type="text/css"/>
     <script src="{{ asset('js/quill.min.js') }}" type="text/javascript"></script>
 @stop
 
@@ -148,9 +148,9 @@
         }
 
         function deleteLogo() {
-            if (confirm("{!! trans('texts.are_you_sure') !!}")) {
+            sweetConfirm(function() {
                 $('.removeLogoForm').submit();
-            }
+            });
         }
 
 	</script>

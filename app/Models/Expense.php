@@ -107,10 +107,7 @@ class Expense extends EntityModel
      */
     public function getName()
     {
-        if($this->expense_number)
-            return $this->expense_number;
-
-        return $this->public_id;
+        return $this->transaction_id ?: '#' . $this->public_id;
     }
 
     /**
@@ -142,7 +139,7 @@ class Expense extends EntityModel
      */
     public function isExchanged()
     {
-        return $this->invoice_currency_id != $this->expense_currency_id;
+        return $this->invoice_currency_id != $this->expense_currency_id || $this->exchange_rate != 1;
     }
 
     /**

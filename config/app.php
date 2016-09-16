@@ -82,7 +82,7 @@ return [
     |
     */
 
-    'key' => env('APP_KEY', 'SomeRandomString'),
+    'key' => env('APP_KEY', 'SomeRandomStringSomeRandomString'),
 
     'cipher' => env('APP_CIPHER', 'AES-256-CBC'),
 
@@ -154,6 +154,8 @@ return [
         'Jlapp\Swaggervel\SwaggervelServiceProvider',
         'Maatwebsite\Excel\ExcelServiceProvider',
         Websight\GcsProvider\CloudStorageServiceProvider::class,
+        'Jaybizzle\LaravelCrawlerDetect\LaravelCrawlerDetectServiceProvider',
+        Codedge\Updater\UpdaterServiceProvider::class,
 
         /*
          * Application Service Providers...
@@ -255,7 +257,8 @@ return [
         'Socialite'       => 'Laravel\Socialite\Facades\Socialite',
         'Excel'           => 'Maatwebsite\Excel\Facades\Excel',
         'PushNotification' => 'Davibennun\LaravelPushNotification\Facades\PushNotification',
-
+        'Crawler'   => 'Jaybizzle\LaravelCrawlerDetect\Facades\LaravelCrawlerDetect',
+        'Updater' => Codedge\Updater\UpdaterFacade::class,
     ],
 
 ];

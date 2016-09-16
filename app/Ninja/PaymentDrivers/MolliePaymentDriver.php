@@ -1,24 +1,22 @@
-<?php
+<?php namespace App\Ninja\PaymentDrivers;
 
-namespace App\Ninja\PaymentDrivers;
+use Exception;
 
-/**
- * Class MolliePaymentDriver
- */
 class MolliePaymentDriver extends BasePaymentDriver
 {
-    /**
-     * @param $input
-     *
-     * @return \App\Models\Payment|mixed
-     */
-    public function completeOffsitePurchase(array $input)
+    public function completeOffsitePurchase($input)
     {
         $details = $this->paymentDetails();
 
         $details['transactionReference'] = $this->invitation->transaction_reference;
 
         $response = $this->gateway()->fetchTransaction($details)->send();
+
+        if ($response->isCancelled()) {
+            return false;
+        } elseif ( ! $response->isSuccessful()) {
+            throw new Exception($response->getMessage());
+        }
 
         return $this->createPayment($response->getTransactionReference());
     }

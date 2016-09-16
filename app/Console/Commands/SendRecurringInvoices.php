@@ -1,6 +1,4 @@
-<?php
-
-namespace App\Console\Commands;
+<?php namespace App\Console\Commands;
 
 use DateTime;
 use Illuminate\Console\Command;
@@ -97,7 +95,7 @@ class SendRecurringInvoices extends Command
             }
 
             if ($invoice->getAutoBillEnabled() && $invoice->client->autoBillLater()) {
-                $this->info('Processing Invoice '.$invoice->id.' - Should bill '.($billNow ? 'YES' : 'NO'));
+                $this->info('Processing Autobill-delayed Invoice ' . $invoice->id);
                 $this->paymentService->autoBillInvoice($invoice);
             }
         }

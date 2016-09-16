@@ -1,6 +1,4 @@
-<?php
-
-namespace App\Ninja\Repositories;
+<?php namespace App\Ninja\Repositories;
 
 use Auth;
 use Request;
@@ -24,9 +22,6 @@ use App\Models\User;
 use App\Models\UserAccount;
 use App\Models\AccountToken;
 
-/**
- * Class AccountRepository
- */
 class AccountRepository
 {
     public function create($firstName = '', $lastName = '', $email = '', $password = '')
@@ -208,7 +203,8 @@ class AccountRepository
             ['new_user', '/users/create'],
             ['custom_fields', '/settings/invoice_settings'],
             ['invoice_number', '/settings/invoice_settings'],
-            ['buy_now_buttons', '/settings/client_portal#buyNow']
+            ['buy_now_buttons', '/settings/client_portal#buy_now'],
+            ['invoice_fields', '/settings/invoice_design#invoice_fields'],
         ]);
 
         $settings = array_merge(Account::$basicSettings, Account::$advancedSettings);
@@ -284,6 +280,7 @@ class AccountRepository
         $invoice->invoice_number = $account->getNextInvoiceNumber($invoice);
         $invoice->invoice_date = $clientAccount->getRenewalDate();
         $invoice->amount = $invoice->balance = $plan_cost - $credit;
+        $invoice->invoice_type_id = INVOICE_TYPE_STANDARD;
         $invoice->save();
 
         if ($credit) {
@@ -643,10 +640,7 @@ class AccountRepository
         return $users;
     }
 
-    /**
-     * @param Account $account
-     */
-    public function unlinkAccount(Account $account) {
+    public function unlinkAccount($account) {
         foreach ($account->users as $user) {
             if ($userAccount = self::findUserAccounts($user->id)) {
                 $userAccount->removeUserId($user->id);
@@ -689,11 +683,7 @@ class AccountRepository
         return $code;
     }
 
-    /**
-     * @param User $user
-     * @param $name
-     */
-    public function createTokens(User $user, $name)
+    public function createTokens($user, $name)
     {
         $name = trim($name) ?: 'TOKEN';
         $users = $this->findUsers($user);
@@ -710,12 +700,7 @@ class AccountRepository
         }
     }
 
-    /**
-     * @param Account $account
-     *
-     * @return bool|mixed
-     */
-    public function getUserAccountId(Account $account)
+    public function getUserAccountId($account)
     {
         $user = $account->users()->first();
         $userAccount = $this->findUserAccounts($user->id);
@@ -723,11 +708,7 @@ class AccountRepository
         return $userAccount ? $userAccount->id : false;
     }
 
-    /**
-     * @param $data
-     * @param Account $account
-     */
-    public function save($data, Account $account)
+    public function save($data, $account)
     {
         $account->fill($data);
         $account->save();

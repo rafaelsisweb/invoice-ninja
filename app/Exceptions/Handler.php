@@ -3,11 +3,13 @@
 use Redirect;
 use Utils;
 use Exception;
+use Crawler;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Http\Exception\HttpResponseException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -16,17 +18,17 @@ use Illuminate\Validation\ValidationException;
 class Handler extends ExceptionHandler
 {
 
-    /**
-     * A list of the exception types that should not be reported.
-     *
-     * @var array
-     */
-    protected $dontReport = [
+	/**
+	 * A list of the exception types that should not be reported.
+	 *
+	 * @var array
+	 */
+	protected $dontReport = [
         AuthorizationException::class,
         HttpException::class,
         ModelNotFoundException::class,
         ValidationException::class,
-    ];
+	];
 
     /**
      * Report or log an exception.
@@ -36,14 +38,18 @@ class Handler extends ExceptionHandler
      * @param  \Exception $e
      * @return bool|void
      */
-    public function report(Exception $e)
-    {
+	public function report(Exception $e)
+	{
         // don't show these errors in the logs
-        if ($e instanceof HttpResponseException) {
+        if ($e instanceof NotFoundHttpException) {
+            if (Crawler::isCrawler()) {
+                return false;
+            }
+        } elseif ($e instanceof HttpResponseException) {
             return false;
         }
 
-        if (Utils::isNinja() && !Utils::isTravis()) {
+        if (Utils::isNinja() && ! Utils::isTravis()) {
             Utils::logError(Utils::getErrorString($e));
             return false;
         } else {
@@ -51,16 +57,15 @@ class Handler extends ExceptionHandler
         }
     }
 
-    /**
-     * Render an exception into an HTTP response.
-     *
-     * @param  \Illuminate\Http\Request $request
-     * @param  \Exception $e
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function render($request, Exception $e)
-    {
+	/**
+	 * Render an exception into an HTTP response.
+	 *
+	 * @param  \Illuminate\Http\Request  $request
+	 * @param  \Exception  $e
+	 * @return \Illuminate\Http\Response
+	 */
+	public function render($request, Exception $e)
+	{
         if ($e instanceof ModelNotFoundException) {
             return Redirect::to('/');
         } elseif ($e instanceof \Illuminate\Session\TokenMismatchException) {
@@ -68,19 +73,18 @@ class Handler extends ExceptionHandler
             if ($request->path() != 'get_started') {
                 // https://gist.github.com/jrmadsen67/bd0f9ad0ef1ed6bb594e
                 return redirect()
-                    ->back()
-                    ->withInput($request->except('password', '_token'))
-                    ->with([
-                        'warning' => trans('texts.token_expired')
-                    ]);
+                        ->back()
+                        ->withInput($request->except('password', '_token'))
+                        ->with([
+                            'warning' => trans('texts.token_expired')
+                        ]);
             }
         }
 
         // In production, except for maintenance mode, we'll show a custom error screen
         if (Utils::isNinjaProd()
             && !Utils::isDownForMaintenance()
-            && !($e instanceof HttpResponseException)
-        ) {
+            && !($e instanceof HttpResponseException)) {
             $data = [
                 'error' => get_class($e),
                 'hideHeader' => true,
@@ -90,5 +94,5 @@ class Handler extends ExceptionHandler
         } else {
             return parent::render($request, $e);
         }
-    }
+	}
 }

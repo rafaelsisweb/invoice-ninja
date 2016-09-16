@@ -1,6 +1,4 @@
-<?php
-
-namespace App\Console\Commands;
+<?php namespace App\Console\Commands;
 
 use DB;
 use Carbon;
@@ -10,10 +8,10 @@ use Symfony\Component\Console\Input\InputOption;
 /*
 
 ##################################################################
-WARNING: Please backup your database before running this script 
+WARNING: Please backup your database before running this script
 ##################################################################
 
-Since the application was released a number of bugs have inevitably been found. 
+Since the application was released a number of bugs have inevitably been found.
 Although the bugs have always been fixed in some cases they've caused the client's
 balance, paid to date and/or activity records to become inaccurate. This script will
 check for errors and correct the data.
@@ -26,7 +24,7 @@ php artisan ninja:check-data
 
 Options:
 
---client_id:<value> 
+--client_id:<value>
 
     Limits the script to a single client
 
@@ -52,20 +50,33 @@ class CheckData extends Command {
      * @var string
      */
     protected $description = 'Check/fix data';
-    
+
     public function fire()
     {
         $this->info(date('Y-m-d') . ' Running CheckData...');
 
         if (!$this->option('client_id')) {
             $this->checkPaidToDate();
+            $this->checkBlankInvoiceHistory();
         }
 
         $this->checkBalances();
 
-        $this->checkAccountData();
+        if (!$this->option('client_id')) {
+            $this->checkAccountData();
+        }
 
         $this->info('Done');
+    }
+
+    private function checkBlankInvoiceHistory()
+    {
+        $count = DB::table('activities')
+                    ->where('activity_type_id', '=', 5)
+                    ->where('json_backup', '=', '')
+                    ->count();
+
+        $this->info($count . ' activities with blank invoice backup');
     }
 
     private function checkAccountData()
@@ -99,6 +110,12 @@ class CheckData extends Command {
                 ENTITY_CLIENT,
                 ENTITY_USER
             ],
+            'expenses' => [
+                ENTITY_CLIENT,
+                ENTITY_VENDOR,
+                ENTITY_INVOICE,
+                ENTITY_USER
+            ]
         ];
 
         foreach ($tables as $table => $entityTypes) {
@@ -109,7 +126,7 @@ class CheckData extends Command {
                 if ($entityType != ENTITY_CLIENT) {
                     $records = $records->join('clients', 'clients.id', '=', "{$table}.client_id");
                 }
-                
+
                 $records = $records->where("{$table}.account_id", '!=', DB::raw("{$entityType}s.account_id"))
                                 ->get(["{$table}.id", 'clients.account_id', 'clients.user_id']);
 
@@ -138,12 +155,14 @@ class CheckData extends Command {
                     ->join('payments', 'payments.client_id', '=', 'clients.id')
                     ->join('invoices', 'invoices.id', '=', 'payments.invoice_id')
                     ->where('payments.is_deleted', '=', 0)
+                    ->where('payments.payment_status_id', '!=', 2)
+                    ->where('payments.payment_status_id', '!=', 3)
                     ->where('invoices.is_deleted', '=', 0)
                     ->groupBy('clients.id')
-                    ->havingRaw('clients.paid_to_date != sum(payments.amount) and clients.paid_to_date != 999999999.9999')
+                    ->havingRaw('clients.paid_to_date != sum(payments.amount - payments.refunded) and clients.paid_to_date != 999999999.9999')
                     ->get(['clients.id', 'clients.paid_to_date', DB::raw('sum(payments.amount) as amount')]);
         $this->info(count($clients) . ' clients with incorrect paid to date');
-        
+
         if ($this->option('fix') == 'true') {
             foreach ($clients as $client) {
                 DB::table('clients')
@@ -158,24 +177,25 @@ class CheckData extends Command {
         // find all clients where the balance doesn't equal the sum of the outstanding invoices
         $clients = DB::table('clients')
                     ->join('invoices', 'invoices.client_id', '=', 'clients.id')
-                    ->join('accounts', 'accounts.id', '=', 'clients.account_id');
-
-        if ($this->option('client_id')) {
-            $clients->where('clients.id', '=', $this->option('client_id'));
-        } else {
-            $clients->where('invoices.is_deleted', '=', 0)
+                    ->join('accounts', 'accounts.id', '=', 'clients.account_id')
+                    ->where('clients.is_deleted', '=', 0)
+                    ->where('invoices.is_deleted', '=', 0)
                     ->where('invoices.invoice_type_id', '=', INVOICE_TYPE_STANDARD)
                     ->where('invoices.is_recurring', '=', 0)
                     ->havingRaw('abs(clients.balance - sum(invoices.balance)) > .01 and clients.balance != 999999999.9999');
+
+        if ($this->option('client_id')) {
+            $clients->where('clients.id', '=', $this->option('client_id'));
         }
-                    
+        
         $clients = $clients->groupBy('clients.id', 'clients.balance', 'clients.created_at')
-                ->orderBy('clients.id', 'DESC')
-                ->get(['clients.account_id', 'clients.id', 'clients.balance', 'clients.paid_to_date', DB::raw('sum(invoices.balance) actual_balance')]);
+                ->orderBy('accounts.company_id', 'DESC')
+                ->get(['accounts.company_id', 'clients.account_id', 'clients.id', 'clients.balance', 'clients.paid_to_date', DB::raw('sum(invoices.balance) actual_balance')]);
         $this->info(count($clients) . ' clients with incorrect balance/activities');
 
         foreach ($clients as $client) {
-            $this->info("=== Client:{$client->id} Balance:{$client->balance} Actual Balance:{$client->actual_balance} ===");
+            $this->info("=== Company: {$client->company_id} Account:{$client->account_id} Client:{$client->id} Balance:{$client->balance} Actual Balance:{$client->actual_balance} ===");
+            $foundProblem = false;
             $lastBalance = 0;
             $lastAdjustment = 0;
             $lastCreatedAt = null;
@@ -183,16 +203,8 @@ class CheckData extends Command {
             $activities = DB::table('activities')
                         ->where('client_id', '=', $client->id)
                         ->orderBy('activities.id')
-                        ->get(
-                            [
-                                'activities.id',
-                                'activities.created_at',
-                                'activities.activity_type_id',
-                                'activities.adjustment',
-                                'activities.balance',
-                                'activities.invoice_id'
-                            ]
-                        );
+                        ->get(['activities.id', 'activities.created_at', 'activities.activity_type_id', 'activities.adjustment', 'activities.balance', 'activities.invoice_id']);
+            //$this->info(var_dump($activities));
 
             foreach ($activities as $activity) {
 
@@ -221,7 +233,7 @@ class CheckData extends Command {
 
                 if ($activity->activity_type_id == ACTIVITY_TYPE_CREATE_INVOICE
                     || $activity->activity_type_id == ACTIVITY_TYPE_CREATE_QUOTE) {
-                    
+
                     // Get original invoice amount
                     $update = DB::table('activities')
                                 ->where('invoice_id', '=', $activity->invoice_id)
@@ -237,14 +249,22 @@ class CheckData extends Command {
                         && $activity->adjustment == 0
                         && $invoice->amount > 0;
 
+                    // **Fix for ninja invoices which didn't have the invoice_type_id value set
+                    if ($noAdjustment && $client->account_id == 20432) {
+                        $this->info("No adjustment for ninja invoice");
+                        $foundProblem = true;
+                        $clientFix += $invoice->amount;
+                        $activityFix = $invoice->amount;
                     // **Fix for allowing converting a recurring invoice to a normal one without updating the balance**
-                    if ($noAdjustment && $invoice->invoice_type_id == INVOICE_TYPE_STANDARD && !$invoice->is_recurring) {
+                    } elseif ($noAdjustment && $invoice->invoice_type_id == INVOICE_TYPE_STANDARD && !$invoice->is_recurring) {
                         $this->info("No adjustment for new invoice:{$activity->invoice_id} amount:{$invoice->amount} invoiceTypeId:{$invoice->invoice_type_id} isRecurring:{$invoice->is_recurring}");
+                        $foundProblem = true;
                         $clientFix += $invoice->amount;
                         $activityFix = $invoice->amount;
                     // **Fix for updating balance when creating a quote or recurring invoice**
                     } elseif ($activity->adjustment != 0 && ($invoice->invoice_type_id == INVOICE_TYPE_QUOTE || $invoice->is_recurring)) {
                         $this->info("Incorrect adjustment for new invoice:{$activity->invoice_id} adjustment:{$activity->adjustment} invoiceTypeId:{$invoice->invoice_type_id} isRecurring:{$invoice->is_recurring}");
+                        $foundProblem = true;
                         $clientFix -= $activity->adjustment;
                         $activityFix = 0;
                     }
@@ -252,6 +272,7 @@ class CheckData extends Command {
                     // **Fix for updating balance when deleting a recurring invoice**
                     if ($activity->adjustment != 0 && $invoice->is_recurring) {
                         $this->info("Incorrect adjustment for deleted invoice adjustment:{$activity->adjustment}");
+                        $foundProblem = true;
                         if ($activity->balance != $lastBalance) {
                             $clientFix -= $activity->adjustment;
                         }
@@ -261,6 +282,7 @@ class CheckData extends Command {
                     // **Fix for updating balance when archiving an invoice**
                     if ($activity->adjustment != 0 && !$invoice->is_recurring) {
                         $this->info("Incorrect adjustment for archiving invoice adjustment:{$activity->adjustment}");
+                        $foundProblem = true;
                         $activityFix = 0;
                         $clientFix += $activity->adjustment;
                     }
@@ -268,10 +290,12 @@ class CheckData extends Command {
                     // **Fix for updating balance when updating recurring invoice**
                     if ($activity->adjustment != 0 && $invoice->is_recurring) {
                         $this->info("Incorrect adjustment for updated recurring invoice adjustment:{$activity->adjustment}");
+                        $foundProblem = true;
                         $clientFix -= $activity->adjustment;
                         $activityFix = 0;
                     } else if ((strtotime($activity->created_at) - strtotime($lastCreatedAt) <= 1) && $activity->adjustment > 0 && $activity->adjustment == $lastAdjustment) {
                         $this->info("Duplicate adjustment for updated invoice adjustment:{$activity->adjustment}");
+                        $foundProblem = true;
                         $clientFix -= $activity->adjustment;
                         $activityFix = 0;
                     }
@@ -279,6 +303,7 @@ class CheckData extends Command {
                     // **Fix for updating balance when updating a quote**
                     if ($activity->balance != $lastBalance) {
                         $this->info("Incorrect adjustment for updated quote adjustment:{$activity->adjustment}");
+                        $foundProblem = true;
                         $clientFix += $lastBalance - $activity->balance;
                         $activityFix = 0;
                     }
@@ -286,6 +311,7 @@ class CheckData extends Command {
                     // **Fix for deleting payment after deleting invoice**
                     if ($activity->adjustment != 0 && $invoice->is_deleted && $activity->created_at > $invoice->deleted_at) {
                         $this->info("Incorrect adjustment for deleted payment adjustment:{$activity->adjustment}");
+                        $foundProblem = true;
                         $activityFix = 0;
                         $clientFix -= $activity->adjustment;
                     }

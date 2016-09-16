@@ -19,8 +19,8 @@ class ComposerServiceProvider extends ServiceProvider
         );
 
         view()->composer(
-            ['header', 'tasks.edit'],
-            'App\Http\ViewComposers\AppLanguageComposer'
+             ['header', 'tasks.edit'],
+             'App\Http\ViewComposers\AppLanguageComposer'
         );
     }
 

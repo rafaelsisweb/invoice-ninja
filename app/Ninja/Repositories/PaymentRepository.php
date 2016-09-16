@@ -1,31 +1,18 @@
-<?php
-
-namespace App\Ninja\Repositories;
+<?php namespace App\Ninja\Repositories;
 
 use DB;
 use Utils;
 use App\Models\Payment;
 use App\Models\Credit;
+use App\Models\Invoice;
 
-/**
- * Class PaymentRepository
- */
 class PaymentRepository extends BaseRepository
 {
-    /**
-     * @return string
-     */
     public function getClassName()
     {
         return 'App\Models\Payment';
     }
 
-    /**
-     * @param null $clientPublicId
-     * @param null $filter
-     *
-     * @return $this
-     */
     public function find($clientPublicId = null, $filter = null)
     {
         $query = DB::table('payments')
@@ -100,12 +87,6 @@ class PaymentRepository extends BaseRepository
         return $query;
     }
 
-    /**
-     * @param null $contactId
-     * @param null $filter
-     *
-     * @return $this
-     */
     public function findForContact($contactId = null, $filter = null)
     {
         $query = DB::table('payments')
@@ -161,13 +142,7 @@ class PaymentRepository extends BaseRepository
         return $query;
     }
 
-    /**
-     * @param array $input
-     * @param Payment|null $payment
-     *
-     * @return Payment|mixed
-     */
-    public function save(array $input, Payment $payment = null)
+    public function save($input, $payment = null)
     {
         $publicId = isset($input['public_id']) ? $input['public_id'] : false;
 
@@ -205,12 +180,11 @@ class PaymentRepository extends BaseRepository
             if ($paymentTypeId == PAYMENT_TYPE_CREDIT) {
                 $credits = Credit::scope()->where('client_id', '=', $clientId)
                             ->where('balance', '>', 0)->orderBy('created_at')->get();
-                $applied = 0;
 
+                $remaining = $amount;
                 foreach ($credits as $credit) {
-                    $applied += $credit->apply($amount);
-
-                    if ($applied >= $amount) {
+                    $remaining -= $credit->apply($remaining);
+                    if ( ! $remaining) {
                         break;
                     }
                 }
@@ -226,11 +200,6 @@ class PaymentRepository extends BaseRepository
         return $payment;
     }
 
-    /**
-     * @param $payment
-     *
-     * @return bool
-     */
     public function delete($payment)
     {
         if ($payment->invoice->is_deleted) {
@@ -240,11 +209,6 @@ class PaymentRepository extends BaseRepository
         parent::delete($payment);
     }
 
-    /**
-     * @param $payment
-     * 
-     * @return bool
-     */
     public function restore($payment)
     {
         if ($payment->invoice->is_deleted) {

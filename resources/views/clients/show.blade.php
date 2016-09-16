@@ -148,7 +148,7 @@
                 @if ($contact->phone)
                     <i class="fa fa-phone" style="width: 20px"></i>{{ $contact->phone }}<br/>
                 @endif
-                @if ($client->account->enable_client_portal)
+                @if (Auth::user()->confirmed && $client->account->enable_client_portal)
                     <i class="fa fa-dashboard" style="width: 20px"></i><a href="{{ $contact->link }}" target="_blank">{{ trans('texts.view_client_portal') }}</a><br/>
                 @endif
 		  	@endforeach
@@ -370,10 +370,10 @@
 	}
 
 	function onDeleteClick() {
-		if (confirm("{!! trans('texts.are_you_sure') !!}")) {
+		sweetConfirm(function() {
 			$('#action').val('delete');
 			$('.mainForm').submit();
-		}
+		});
 	}
 
     @if ($client->hasAddress())

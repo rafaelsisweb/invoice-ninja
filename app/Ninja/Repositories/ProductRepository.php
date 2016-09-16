@@ -1,26 +1,15 @@
-<?php
-
-namespace App\Ninja\Repositories;
+<?php namespace App\Ninja\Repositories;
 
 use DB;
 use App\Models\Product;
 
-/**
- * Class ProductRepository
- */
 class ProductRepository extends BaseRepository
 {
-    /**
-     * @return string
-     */
     public function getClassName()
     {
         return 'App\Models\Product';
     }
 
-    /**
-     * @return mixed
-     */
     public function all()
     {
         return Product::scope()
@@ -28,11 +17,6 @@ class ProductRepository extends BaseRepository
                 ->get();
     }
 
-    /**
-     * @param $accountId
-     *
-     * @return $this
-     */
     public function find($accountId)
     {
         return DB::table('products')
@@ -53,13 +37,7 @@ class ProductRepository extends BaseRepository
                 );
     }
 
-    /**
-     * @param array $data
-     * @param Product|null $product
-     * 
-     * @return Product|mixed
-     */
-    public function save(array $data, Product $product = null)
+    public function save($data, $product = null)
     {
         $publicId = isset($data['public_id']) ? $data['public_id'] : false;
 
@@ -77,5 +55,35 @@ class ProductRepository extends BaseRepository
 
         return $product;
     }
+
+    public function findPhonetically($productName)
+    {
+        $productNameMeta = metaphone($productName);
+
+        $map = [];
+        $max = SIMILAR_MIN_THRESHOLD;
+        $productId = 0;
+
+        $products = Product::scope()
+                        ->with('default_tax_rate')
+                        ->get();
+
+        foreach ($products as $product) {
+            if ( ! $product->product_key) {
+                continue;
+            }
+
+            $map[$product->id] = $product;
+            $similar = similar_text($productNameMeta, metaphone($product->product_key), $percent);
+
+            if ($percent > $max) {
+                $productId = $product->id;
+                $max = $percent;
+            }
+        }
+
+        return ($productId && isset($map[$productId])) ? $map[$productId] : null;
+    }
+
 
 }

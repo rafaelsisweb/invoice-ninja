@@ -1,15 +1,11 @@
-<?php
+<?php namespace App\Ninja\Mailers;
 
-namespace App\Ninja\Mailers;
 
 use App\Models\Invitation;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
 
-/**
- * Class UserMailer
- */
 class UserMailer extends Mailer
 {
     /**
@@ -109,6 +105,22 @@ class UserMailer extends Mailer
             'entityType' => $entityType,
             'contactName' => $invitation->contact->getDisplayName(),
             'invoiceNumber' => $invoice->invoice_number,
+        ];
+
+        $this->sendTo($user->email, CONTACT_EMAIL, CONTACT_NAME, $subject, $view, $data);
+    }
+
+    public function sendSecurityCode($user, $code)
+    {
+        if (!$user->email) {
+            return;
+        }
+
+        $subject = trans('texts.security_code_email_subject');
+        $view = 'security_code';
+        $data = [
+            'userName' => $user->getDisplayName(),
+            'code' => $code,
         ];
 
         $this->sendTo($user->email, CONTACT_EMAIL, CONTACT_NAME, $subject, $view, $data);
