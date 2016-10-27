@@ -167,6 +167,10 @@ class AccountController extends BaseController
         $term = Input::get('plan_term');
         $numUsers = Input::get('num_users');
 
+        if ($plan != PLAN_ENTERPRISE) {
+          $numUsers = 1;
+        }
+
         $planDetails = $account->getPlanDetails(false, false);
 
         $newPlan = [
@@ -195,7 +199,9 @@ class AccountController extends BaseController
             }
         }
 
+        $hasPaid = false;
         if (!empty($planDetails['paid']) && $plan != PLAN_FREE) {
+            $hasPaid = true;
             $time_used = $planDetails['paid']->diff(date_create());
             $days_used = $time_used->days;
 
@@ -211,7 +217,11 @@ class AccountController extends BaseController
 
         if ($newPlan['price'] > $credit) {
             $invitation = $this->accountRepo->enablePlan($newPlan, $credit);
-            return Redirect::to('view/' . $invitation->invitation_key);
+            if ($hasPaid) {
+              return Redirect::to('view/' . $invitation->invitation_key);
+            } else {
+              return Redirect::to('payment/' . $invitation->invitation_key);
+            }
         } else {
 
             if ($plan != PLAN_FREE) {
@@ -475,16 +485,9 @@ class AccountController extends BaseController
      */
     private function showProducts()
     {
-        $columns = ['product', 'description', 'unit_cost'];
-        if (Auth::user()->account->invoice_item_taxes) {
-            $columns[] = 'tax_rate';
-        }
-        $columns[] = 'action';
-
         $data = [
             'account' => Auth::user()->account,
             'title' => trans('texts.product_library'),
-            'columns' => Utils::trans($columns),
         ];
 
         return View::make('accounts.products', $data);
@@ -701,7 +704,25 @@ class AccountController extends BaseController
             return AccountController::saveTaxRates();
         } elseif ($section === ACCOUNT_PAYMENT_TERMS) {
             return AccountController::savePaymetTerms();
+        } elseif ($section === ACCOUNT_MANAGEMENT) {
+            return AccountController::saveAccountManagement();
         }
+    }
+
+    /**
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    private function saveAccountManagement()
+    {
+        $account = Auth::user()->account;
+        $modules = Input::get('modules');
+
+        $account->enabled_modules = $modules ? array_sum($modules) : 0;
+        $account->save();
+
+        Session::flash('message', trans('texts.updated_settings'));
+
+        return Redirect::to('settings/'.ACCOUNT_MANAGEMENT);
     }
 
     /**
@@ -1073,7 +1094,7 @@ class AccountController extends BaseController
             $path = Input::file('logo')->getRealPath();
 
             $disk = $account->getLogoDisk();
-            if ($account->hasLogo()) {
+            if ($account->hasLogo() && ! Utils::isNinjaProd()) {
                 $disk->delete($account->logo);
             }
 
@@ -1266,7 +1287,9 @@ class AccountController extends BaseController
     {
         $account = Auth::user()->account;
         if ($account->hasLogo()) {
-            $account->getLogoDisk()->delete($account->logo);
+            if ( ! Utils::isNinjaProd()) {
+                $account->getLogoDisk()->delete($account->logo);
+            }
 
             $account->logo = null;
             $account->logo_size = null;

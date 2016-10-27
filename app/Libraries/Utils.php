@@ -354,12 +354,16 @@ class Utils
         return $data->first();
     }
 
-    public static function formatMoney($value, $currencyId = false, $countryId = false, $showCode = false)
+    public static function formatMoney($value, $currencyId = false, $countryId = false, $decorator = false)
     {
         $value = floatval($value);
 
         if (!$currencyId) {
             $currencyId = Session::get(SESSION_CURRENCY, DEFAULT_CURRENCY);
+        }
+
+        if (!$decorator) {
+            $decorator = Session::get(SESSION_CURRENCY_DECORATOR, CURRENCY_DECORATOR_SYMBOL);
         }
 
         if (!$countryId && Auth::check()) {
@@ -387,7 +391,9 @@ class Utils
         $value = number_format($value, $precision, $decimal, $thousand);
         $symbol = $currency->symbol;
 
-        if ($showCode || !$symbol) {
+        if ($decorator == CURRENCY_DECORATOR_NONE) {
+            return $value;
+        } elseif ($decorator == CURRENCY_DECORATOR_CODE || ! $symbol) {
             return "{$value} {$code}";
         } elseif ($swapSymbol) {
             return "{$value} " . trim($symbol);
@@ -1028,5 +1034,59 @@ class Utils
         return collect(static::$weekdayNames)->transform(function ($day) {
              return trans('texts.'.strtolower($day));
         });
+    }
+
+    public static function getDocsUrl($path)
+    {
+        $page = '';
+        $parts = explode('/', $path);
+        $first = count($parts) ? $parts[0] : false;
+        $second = count($parts) > 1 ? $parts[1] : false;
+
+        $entityTypes = [
+            'clients',
+            'invoices',
+            'payments',
+            'recurring_invoices',
+            'credits',
+            'quotes',
+            'tasks',
+            'expenses',
+            'vendors',
+        ];
+
+        if ($path == 'dashboard') {
+            $page = '/introduction.html#dashboard';
+        } elseif (in_array($path, $entityTypes)) {
+            $page = "/{$path}.html#list-" . str_replace('_', '-', $path);
+        } elseif (in_array($first, $entityTypes)) {
+            $action = ($first == 'payments' || $first == 'credits') ? 'enter' : 'create';
+            $page = "/{$first}.html#{$action}-" . substr(str_replace('_', '-', $first), 0, -1);
+        } elseif ($first == 'expense_categories') {
+            $page = '/expenses.html#expense-categories';
+        } elseif ($first == 'settings') {
+            if ($second == 'bank_accounts') {
+                $page = ''; // TODO write docs
+            } elseif (in_array($second, \App\Models\Account::$basicSettings)) {
+                if ($second == 'products') {
+                    $second = 'product_library';
+                } elseif ($second == 'notifications') {
+                    $second = 'email_notifications';
+                }
+                $page = '/settings.html#' . str_replace('_', '-', $second);
+            } elseif (in_array($second, \App\Models\Account::$advancedSettings)) {
+                $page = "/{$second}.html";
+            } elseif ($second == 'customize_design') {
+                $page = '/invoice_design.html#customize';
+            }
+        } elseif ($first == 'tax_rates') {
+            $page = '/settings.html#tax-rates';
+        } elseif ($first == 'products') {
+            $page = '/settings.html#product-library';
+        } elseif ($first == 'users') {
+            $page = '/user_management.html#create-user';
+        }
+
+        return url(NINJA_DOCS_URL . $page);
     }
 }

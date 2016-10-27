@@ -146,7 +146,7 @@ class EntityModel extends Eloquent
             }
         }
 
-        if (Auth::check() && ! Auth::user()->hasPermission('view_all')) {
+        if (Auth::check() && ! Auth::user()->hasPermission('view_all') && $this->getEntityType() != ENTITY_TAX_RATE) {
             $query->where(Utils::pluralizeEntityType($this->getEntityType()) . '.user_id', '=', Auth::user()->id);
         }
 
@@ -254,6 +254,7 @@ class EntityModel extends Eloquent
         $icons = [
             'dashboard' => 'tachometer',
             'clients' => 'users',
+            'products' => 'cube',
             'invoices' => 'file-pdf-o',
             'payments' => 'credit-card',
             'recurring_invoices' => 'files-o',
@@ -263,9 +264,21 @@ class EntityModel extends Eloquent
             'expenses' => 'file-image-o',
             'vendors' => 'building',
             'settings' => 'cog',
+            'self-update' => 'download',
         ];
 
         return array_get($icons, $entityType);
     }
 
+    // isDirty return true if the field's new value is the same as the old one
+    public function isChanged()
+    {
+        foreach ($this->fillable as $field) {
+            if ($this->$field != $this->getOriginal($field)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

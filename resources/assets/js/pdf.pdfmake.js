@@ -114,6 +114,8 @@ function GetPdfMake(invoice, javascript, callback) {
     // set page size
     dd.pageSize = invoice.account.page_size;
 
+    // dd.watermark = 'PAID';
+
     pdfMake.fonts = {}
     fonts = window.invoiceFonts || invoice.invoice_fonts;
 
@@ -210,7 +212,11 @@ NINJA.decodeJavascript = function(invoice, javascript)
                 if (invoice.partial > 0 && field == 'balance_due') {
                     field = 'partial_due';
                 } else if (invoice.is_quote) {
-                    field = field.replace('invoice', 'quote');
+                    if (field == 'due_date') {
+                        field = 'valid_until';
+                    } else {
+                        field = field.replace('invoice', 'quote');
+                    }
                 }
                 var label = invoiceLabels[field];
                 if (match.indexOf('UC') >= 0) {
@@ -366,7 +372,7 @@ NINJA.invoiceLines = function(invoice) {
 
         var row = [];
         var item = invoice.invoice_items[i];
-        var cost = formatMoneyInvoice(item.cost, invoice, true);
+        var cost = formatMoneyInvoice(item.cost, invoice, 'none');
         var qty = NINJA.parseFloat(item.qty) ? roundToTwo(NINJA.parseFloat(item.qty)) + '' : '';
         var notes = item.notes;
         var productKey = item.product_key;
@@ -673,6 +679,8 @@ NINJA.renderInvoiceField = function(invoice, field) {
         } else {
             return false;
         }
+    } else if (field == '.blank') {
+        return [{text: ' '}, {text: ' '}];
     }
 }
 
@@ -740,6 +748,8 @@ NINJA.renderClientOrAccountField = function(invoice, field) {
     } else if (field == 'client.email') {
         var clientEmail = contact.email == clientName ? '' : contact.email;
         return {text:clientEmail};
+    } else if (field == 'client.phone') {
+        return {text:contact.phone};
     } else if (field == 'client.custom_value1') {
         return {text: account.custom_client_label1 && client.custom_value1 ? account.custom_client_label1 + ' ' + client.custom_value1 : false};
     } else if (field == 'client.custom_value2') {
@@ -779,6 +789,8 @@ NINJA.renderClientOrAccountField = function(invoice, field) {
         if (invoice.features.invoice_settings) {
             return invoice.account.custom_label2 && invoice.account.custom_value2 ? {text: invoice.account.custom_label2 + ' ' + invoice.account.custom_value2} : false;
         }
+    } else if (field == '.blank') {
+        return {text: ' '};
     }
 
     return false;
